@@ -28,6 +28,7 @@ type ExportTemplate struct {
 
 type ExportField struct {
 	Name       string                 `json:"name"`
+	Alias      string                 `json:"alias"`
 	RefField   string                 `json:"reffield"`
 	Properties map[string]interface{} `json:"properties"`
 }

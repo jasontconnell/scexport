@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -15,7 +16,12 @@ func main() {
 	start := time.Now()
 	c := flag.String("c", "config.json", "config filename")
 	es := flag.String("settings", "", "export settings file")
+	q := flag.Bool("q", false, "quiet mode")
 	flag.Parse()
+
+	if *q {
+		log.SetOutput(ioutil.Discard)
+	}
 
 	cfg, err := conf.LoadConfig(*c)
 	if err != nil {
@@ -43,11 +49,6 @@ func main() {
 		log.Fatal("resolving items. ", err)
 	}
 
-	log.Println(len(groups), "groups")
-	for _, g := range groups {
-		log.Println(g.Name, len(g.Items))
-	}
-
 	wd, _ := os.Getwd()
 	ws := process.WriteSettings{
 		ContentFormat:   settings.Output.ContentFormat,
@@ -55,7 +56,14 @@ func main() {
 		BlobLocation:    settings.Output.BlobLocation,
 	}
 
-	err = process.Write(wd, groups, ws)
+	blobData, err := process.ReadBlobs(cfg.ConnectionString, groups)
+	if err != nil {
+		log.Fatal("couldn't read blobs. ", err)
+	}
+
+	err = process.WriteBlobs(wd, blobData, ws)
+
+	err = process.WriteContent(wd, groups, ws)
 	if err != nil {
 		log.Fatal("writing contents. ", err)
 	}

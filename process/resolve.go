@@ -3,28 +3,13 @@ package process
 import (
 	"fmt"
 	"log"
+	"sort"
 
 	"github.com/google/uuid"
 	"github.com/jasontconnell/scexport/conf"
 	"github.com/jasontconnell/sitecore/api"
 	"github.com/jasontconnell/sitecore/data"
 )
-
-type Group struct {
-	Name  string
-	Items []Item
-}
-
-type Item struct {
-	Name   string
-	Fields []Field
-}
-
-type Field struct {
-	Name  string
-	Value string
-	CData bool
-}
 
 func Resolve(items []data.ItemNode, m data.ItemMap, settings map[uuid.UUID]TemplateSettings, lang data.Language) ([]Group, error) {
 	gmap := map[string]Group{}
@@ -41,28 +26,50 @@ func Resolve(items []data.ItemNode, m data.ItemMap, settings map[uuid.UUID]Templ
 		}
 
 		gitem := Item{Name: item.GetName(), Fields: []Field{}}
-		vfields := item.GetLatestVersionFields(lang)
-		for _, fv := range vfields {
-			fld := item.GetTemplate().GetField(fv.GetFieldId())
+		for _, fs := range tsettings.Fields {
+			itmp := item.GetTemplate()
+			fld := itmp.FindField(fs.Name)
 			if fld == nil {
 				continue
 			}
-			fs, ok := tsettings.Fields[fld.GetName()]
-			if !ok {
-				// not exporting
+
+			fv := item.GetFieldValue(fld.GetId(), lang)
+			if fv == nil {
+				// nil here means it has no value, it's not an error
 				continue
 			}
 
-			gfld := Field{Name: fv.GetName()}
+			fnm := fv.GetName()
+			if fs.Alias != "" {
+				fnm = fs.Alias
+			}
+			gfld := Field{Name: fnm}
 			result, err := ResolveField(fv, fld, item, m, fs, lang)
 			if err != nil {
-				log.Println(err)
+				shortval := fv.GetValue()
+				if len(shortval) > 100 {
+					shortval = string(shortval[:99]) + "..."
+				}
+				log.Printf("couldn't resolve field %v (id: %v) %v (id: %v) Language: %v Field Value: %v (root cause: %v)\n", item.GetName(), item.GetId(), fv.GetName(), fv.GetFieldId(), lang, shortval, err)
+				continue
 			}
 			gfld.Value = result.value
 			gfld.CData = result.html
 
+			for _, blob := range result.blobs {
+				b := Blob{Id: blob.blobId, Filename: blob.name + "." + blob.ext}
+				for _, attr := range blob.attrs {
+					b.Attrs = append(b.Attrs, Attr{Name: attr.name, Value: attr.value})
+				}
+				gitem.Blobs = append(gitem.Blobs, b)
+				group.Blobs = append(group.Blobs, b)
+			}
+
 			gitem.Fields = append(gitem.Fields, gfld)
 		}
+		sort.Slice(gitem.Fields, func(i, j int) bool {
+			return gitem.Fields[i].Name < gitem.Fields[j].Name
+		})
 
 		group.Items = append(group.Items, gitem)
 		gmap[group.Name] = group
