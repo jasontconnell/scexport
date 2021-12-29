@@ -104,7 +104,7 @@ If a field references an object and you want to use more than one field from the
 </items>
 ```
 
-As you can see, the images that link to an image within Sitecore (like `-/media/ABCDABCDABCDDEFA1234123456789123.ashx`) will be pulled and placed into the blobs folder, and referenced here.
+As you can see, the images that link to an image within Sitecore (like `-/media/ABCDABCDABCDDEFA1234123456789123.ashx`) will be pulled and placed into the blobs folder, and referenced here. Image fields will be handled similarly.
 
 All blobs will be output to the specified folder in the output section. They will be one file per blob, different from how content is handled. The blob xml will look like this:
 
