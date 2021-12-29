@@ -148,11 +148,7 @@ func handleImage(fv data.FieldValueNode, item data.ItemNode, items data.ItemMap,
 		return handlerResult{}, fmt.Errorf("extracting blob. %w", err)
 	}
 
-	if strings.Contains(b.blobId.String(), "0000000") {
-		fmt.Println("image", b.blobId, item.GetName(), id, val, err)
-	}
-
-	hr := handlerResult{value: b.name + "." + b.ext}
+	hr := handlerResult{value: "blobref:" + b.blobId.String()}
 	hr.blobs = append(hr.blobs, b)
 
 	return hr, nil

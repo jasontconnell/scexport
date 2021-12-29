@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 )
 
 func WriteBlobs(dir string, bdata []BlobData, settings WriteSettings) error {
@@ -99,10 +98,4 @@ func writeContentXml(fullpath string, g Group) error {
 
 	cxml := ContentsXml{ContentItems: items}
 	return enc.Encode(cxml)
-}
-
-var stripreg *regexp.Regexp = regexp.MustCompile("[^a-zA-Z0-9\\-]+")
-
-func strip(str string) string {
-	return stripreg.ReplaceAllString(str, "")
 }
