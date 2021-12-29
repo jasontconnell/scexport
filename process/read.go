@@ -61,10 +61,7 @@ func ReadAll(connstr string, settings map[uuid.UUID]TemplateSettings, globalTemp
 
 	api.AssignFieldValues(m, fvlist)
 
-	filtered, err := filterMap(m, settings)
-	if err != nil {
-		return nil, nil, fmt.Errorf("couldn't filter items. %w", err)
-	}
+	filtered := filterMap(m, settings)
 
 	final := []data.ItemNode{}
 	for _, item := range filtered {
@@ -78,7 +75,7 @@ func ReadAll(connstr string, settings map[uuid.UUID]TemplateSettings, globalTemp
 	return final, m, nil
 }
 
-func filterMap(m data.ItemMap, settings map[uuid.UUID]TemplateSettings) (data.ItemMap, error) {
+func filterMap(m data.ItemMap, settings map[uuid.UUID]TemplateSettings) data.ItemMap {
 	paths := []string{}
 	tm := make(map[uuid.UUID]bool)
 	for _, t := range settings {
@@ -92,5 +89,5 @@ func filterMap(m data.ItemMap, settings map[uuid.UUID]TemplateSettings) (data.It
 		return ok
 	})
 
-	return nm, nil
+	return nm
 }
