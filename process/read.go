@@ -79,7 +79,7 @@ func filterMap(m data.ItemMap, settings map[uuid.UUID]TemplateSettings) data.Ite
 	paths := []string{}
 	tm := make(map[uuid.UUID]bool)
 	for _, t := range settings {
-		paths = append(paths, t.Path)
+		paths = append(paths, t.Paths...)
 		tm[t.TemplateId] = true
 	}
 

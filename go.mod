@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/google/uuid v1.1.1
 	github.com/jasontconnell/conf v1.1.0
-	github.com/jasontconnell/sitecore v1.4.0
+	github.com/jasontconnell/sitecore v1.4.1
 )
 
 require (

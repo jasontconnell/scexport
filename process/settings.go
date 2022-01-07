@@ -20,7 +20,7 @@ func GetSettings(cfg conf.ExportSettings) (map[uuid.UUID]TemplateSettings, error
 		settings := TemplateSettings{
 			TemplateId: id,
 			Name:       tscfg.Name,
-			Path:       tscfg.Path,
+			Paths:      tscfg.Paths,
 			Fields:     map[string]FieldSettings{},
 		}
 

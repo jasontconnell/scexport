@@ -22,7 +22,7 @@ type ExportSettings struct {
 type ExportTemplate struct {
 	Name       string        `json:"name"`
 	TemplateId string        `json:"templateId"`
-	Path       string        `json:"path"`
+	Paths      []string      `json:"paths"`
 	Fields     []ExportField `json:"fields"`
 }
 

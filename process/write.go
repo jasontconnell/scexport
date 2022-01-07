@@ -82,6 +82,18 @@ func writeContentXml(fullpath string, g Group) error {
 			} else {
 				xf.Value = f.Value
 			}
+			for _, ref := range f.Refs {
+				xref := ContentItem{}
+				for _, xreffld := range ref.Fields {
+					if xreffld.Value != "" && xreffld.Name != "" {
+						xref.Fields = append(xref.Fields, ContentField{Name: xreffld.Name, Value: xreffld.Value})
+					}
+				}
+
+				if len(xref.Fields) > 0 {
+					xf.Refs = append(xf.Refs, xref)
+				}
+			}
 			x.Fields = append(x.Fields, xf)
 		}
 

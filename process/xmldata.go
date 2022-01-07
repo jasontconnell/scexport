@@ -17,17 +17,18 @@ type ContentsXml struct {
 
 type ContentItem struct {
 	XMLName  xml.Name       `xml:"item"`
-	TypeName string         `xml:"type,attr"`
-	Name     string         `xml:"name,attr"`
+	TypeName string         `xml:"type,attr,omitempty"`
+	Name     string         `xml:"name,attr,omitempty"`
 	Fields   []ContentField `xml:"fields>field"`
 	Blobs    []BlobRef      `xml:"blobrefs>blob,omitempty"`
 }
 
 type ContentField struct {
-	XMLName  xml.Name `xml:"field"`
-	Name     string   `xml:"name,attr"`
-	Value    string   `xml:"value,attr,omitempty"`
-	Contents string   `xml:",cdata"`
+	XMLName  xml.Name      `xml:"field"`
+	Name     string        `xml:"name,attr,omitempty"`
+	Value    string        `xml:"value,attr,omitempty"`
+	Contents string        `xml:",cdata"`
+	Refs     []ContentItem `xml:"refs,omitempty"`
 }
 
 type BlobRef struct {

@@ -25,53 +25,13 @@ func Resolve(items []data.ItemNode, m data.ItemMap, settings map[uuid.UUID]Templ
 			group = Group{Name: gkey}
 		}
 
-		gitem := Item{Name: item.GetName(), Fields: []Field{}}
-		for _, fs := range tsettings.Fields {
-			itmp := item.GetTemplate()
-			fld := itmp.FindField(fs.Name)
-			if fld == nil {
-				continue
-			}
-
-			fv := item.GetFieldValue(fld.GetId(), lang)
-			if fv == nil {
-				// nil here means it has no value, it's not an error
-				continue
-			}
-
-			fnm := fv.GetName()
-			if fs.Alias != "" {
-				fnm = fs.Alias
-			}
-			gfld := Field{Name: fnm}
-			result, err := ResolveField(fv, fld, item, m, fs, lang)
-			if err != nil {
-				shortval := fv.GetValue()
-				if len(shortval) > 100 {
-					shortval = string(shortval[:99]) + "..."
-				}
-				log.Printf("couldn't resolve field %v (id: %v) %v (id: %v) Language: %v Field Value: %v (root cause: %v)\n", item.GetName(), item.GetId(), fv.GetName(), fv.GetFieldId(), lang, shortval, err)
-				continue
-			}
-			gfld.Value = result.value
-			gfld.CData = result.html
-
-			for _, blob := range result.blobs {
-				b := Blob{Id: blob.blobId, Filename: blob.name + "." + blob.ext}
-				for _, attr := range blob.attrs {
-					b.Attrs = append(b.Attrs, Attr{Name: attr.name, Value: attr.value})
-				}
-				gitem.Blobs = append(gitem.Blobs, b)
-				group.Blobs = append(group.Blobs, b)
-			}
-
-			gitem.Fields = append(gitem.Fields, gfld)
+		item := resolveItem(item, m, tsettings, lang)
+		group.Items = append(group.Items, item)
+		for _, b := range item.Blobs {
+			group.Blobs = append(group.Blobs, b)
 		}
-		sort.Slice(gitem.Fields, func(i, j int) bool {
-			return gitem.Fields[i].Name < gitem.Fields[j].Name
-		})
 
-		group.Items = append(group.Items, gitem)
+		group.Items = append(group.Items, item)
 		gmap[group.Name] = group
 	}
 
@@ -92,4 +52,105 @@ func getTemplateSettingsMap(settings conf.ExportSettings) (map[uuid.UUID]conf.Ex
 		lookup[uid] = t
 	}
 	return lookup, nil
+}
+
+func resolveReferenceItem(item data.ItemNode, m data.ItemMap, fields []string, lang data.Language) Item {
+	gitem := Item{Name: item.GetName(), Fields: []Field{}}
+	for _, fn := range fields {
+		itmp := item.GetTemplate()
+		fld := itmp.FindField(fn)
+		if fld == nil {
+			continue
+		}
+
+		fv := item.GetFieldValue(fld.GetId(), lang)
+		if fv == nil {
+			// nil here means it has no value, it's not an error
+			continue
+		}
+
+		fnm := fv.GetName()
+		gfld := Field{Name: fnm}
+		result, err := ResolveField(fv, fld, item, m, FieldSettings{}, lang)
+		if err != nil {
+			shortval := fv.GetValue()
+			if len(shortval) > 100 {
+				shortval = string(shortval[:99]) + "..."
+			}
+			log.Printf("couldn't resolve field %v (id: %v) %v (id: %v) Language: %v Field Value: %v (root cause: %v)\n", item.GetName(), item.GetId(), fv.GetName(), fv.GetFieldId(), lang, shortval, err)
+			continue
+		}
+		gfld.Value = result.GetValue()
+		gfld.CData = result.IsHtml()
+
+		for _, blob := range result.GetBlobs() {
+			b := Blob{Id: blob.GetId(), Filename: blob.GetName() + "." + blob.GetExt()}
+			for _, attr := range blob.GetAttrs() {
+				b.Attrs = append(b.Attrs, Attr{Name: attr.Name, Value: attr.Value})
+			}
+			gitem.Blobs = append(gitem.Blobs, b)
+		}
+
+		gitem.Fields = append(gitem.Fields, gfld)
+	}
+
+	sort.Slice(gitem.Fields, func(i, j int) bool {
+		return gitem.Fields[i].Name < gitem.Fields[j].Name
+	})
+
+	return gitem
+}
+
+func resolveItem(item data.ItemNode, m data.ItemMap, tsetting TemplateSettings, lang data.Language) Item {
+	gitem := Item{Name: item.GetName(), Fields: []Field{}}
+	for _, fs := range tsetting.Fields {
+		itmp := item.GetTemplate()
+		fld := itmp.FindField(fs.Name)
+		if fld == nil {
+			continue
+		}
+
+		fv := item.GetFieldValue(fld.GetId(), lang)
+		if fv == nil {
+			// nil here means it has no value, it's not an error
+			continue
+		}
+
+		fnm := fv.GetName()
+		if fs.Alias != "" {
+			fnm = fs.Alias
+		}
+		gfld := Field{Name: fnm}
+		result, err := ResolveField(fv, fld, item, m, fs, lang)
+		if err != nil {
+			shortval := fv.GetValue()
+			if len(shortval) > 100 {
+				shortval = string(shortval[:99]) + "..."
+			}
+			log.Printf("couldn't resolve field %v (id: %v) %v (id: %v) Language: %v Field Value: %v (root cause: %v)\n", item.GetName(), item.GetId(), fv.GetName(), fv.GetFieldId(), lang, shortval, err)
+			continue
+		}
+		gfld.Value = result.GetValue()
+		gfld.CData = result.IsHtml()
+
+		for _, blob := range result.GetBlobs() {
+			b := Blob{Id: blob.GetId(), Filename: blob.GetName() + "." + blob.GetExt()}
+			for _, attr := range blob.GetAttrs() {
+				b.Attrs = append(b.Attrs, Attr{Name: attr.Name, Value: attr.Value})
+			}
+			gitem.Blobs = append(gitem.Blobs, b)
+		}
+
+		for _, ref := range result.GetReferences() {
+			gfld.Refs = append(gfld.Refs, ref)
+		}
+
+		gitem.Fields = append(gitem.Fields, gfld)
+	}
+
+	sort.Slice(gitem.Fields, func(i, j int) bool {
+		return gitem.Fields[i].Name < gitem.Fields[j].Name
+	})
+
+	return gitem
 }

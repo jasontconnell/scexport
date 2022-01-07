@@ -10,22 +10,6 @@ type BlobData struct {
 	Filename string
 }
 
-type BlobResult interface {
-	GetId() uuid.UUID
-	GetName() string
-	GetAttrs() []Attr
-	GetExt() string
-}
-
-type HandlerResult interface {
-	GetValue() string
-	GetBlobs() []BlobResult
-}
-
-type HandlerMultiResult interface {
-	GetResults() []HandlerResult
-}
-
 type Group struct {
 	Name  string
 	Items []Item
@@ -42,6 +26,7 @@ type Field struct {
 	Name  string
 	Value string
 	CData bool
+	Refs  []Item
 }
 
 type Blob struct {
@@ -64,7 +49,7 @@ type TemplateSettings struct {
 	TemplateId uuid.UUID
 	Name       string
 	Fields     map[string]FieldSettings
-	Path       string
+	Paths      []string
 }
 
 type FieldSettings struct {
