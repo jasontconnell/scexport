@@ -16,11 +16,11 @@ type ContentsXml struct {
 }
 
 type ContentItem struct {
-	XMLName  xml.Name       `xml:"item"`
-	TypeName string         `xml:"type,attr,omitempty"`
-	Name     string         `xml:"name,attr,omitempty"`
-	Fields   []ContentField `xml:"fields>field"`
-	Blobs    []BlobRef      `xml:"blobrefs>blob,omitempty"`
+	XMLName  xml.Name        `xml:"item"`
+	TypeName string          `xml:"type,attr,omitempty"`
+	Name     string          `xml:"name,attr,omitempty"`
+	Fields   *[]ContentField `xml:"fields>field"`
+	Blobs    *[]BlobRef      `xml:"blobrefs>blob,omitempty"`
 }
 
 type ContentField struct {
@@ -32,6 +32,7 @@ type ContentField struct {
 }
 
 type BlobRef struct {
-	Id       string `xml:"id,attr"`
-	Filename string `xml:"filename,attr"`
+	XMLName  xml.Name `xml:"blob"`
+	Id       string   `xml:"id,attr"`
+	Filename string   `xml:"filename,attr"`
 }

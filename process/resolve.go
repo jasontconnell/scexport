@@ -26,7 +26,6 @@ func Resolve(items []data.ItemNode, m data.ItemMap, settings map[uuid.UUID]Templ
 		}
 
 		item := resolveItem(item, m, tsettings, lang)
-		group.Items = append(group.Items, item)
 		for _, b := range item.Blobs {
 			group.Blobs = append(group.Blobs, b)
 		}

@@ -20,14 +20,15 @@ var fieldHandlers map[string]FieldHandler
 
 func init() {
 	fieldHandlers = map[string]FieldHandler{
-		"Single-Line Text": handleString,
-		"Droplink":         handleReference,
-		"Treelist":         handleMultiple,
-		"Datetime":         handleString,
-		"Rich Text":        handleRichText,
-		"Multi-Line Text":  handleRichText,
-		"Image":            handleImage,
-		"attachment":       handleAttachment,
+		"Single-Line Text":   handleString,
+		"Droplink":           handleReference,
+		"Treelist":           handleReferenceList,
+		"MultiRoot Treelist": handleReferenceList,
+		"Datetime":           handleString,
+		"Rich Text":          handleRichText,
+		"Multi-Line Text":    handleRichText,
+		"Image":              handleImage,
+		"attachment":         handleAttachment,
 	}
 }
 
@@ -73,7 +74,7 @@ func handleRichText(fv data.FieldValueNode, item data.ItemNode, items data.ItemM
 	return hr, nil
 }
 
-func handleMultiple(fv data.FieldValueNode, item data.ItemNode, items data.ItemMap, fsetting FieldSettings, lang data.Language) (HandlerResult, error) {
+func handleReferenceList(fv data.FieldValueNode, item data.ItemNode, items data.ItemMap, fsetting FieldSettings, lang data.Language) (HandlerResult, error) {
 	refval := fv.GetValue()
 	ids := strings.Split(refval, "|")
 
@@ -81,22 +82,28 @@ func handleMultiple(fv data.FieldValueNode, item data.ItemNode, items data.ItemM
 		return nil, nil
 	}
 
-	if len(ids) == 1 && fsetting.RefField != "" {
-		return handleReference(fv, item, items, fsetting, lang)
-	}
+	// if len(ids) == 1 && fsetting.RefField != "" {
+	// 	return handleReference(fv, item, items, fsetting, lang)
+	// }
 
 	if v, ok := fsetting.Properties["blob"].(bool); ok && v {
 		return handleReference(fv, item, items, fsetting, lang)
 	}
 
+	usename := fsetting.RefField == ":name"
+
 	finter, ok := fsetting.Properties["fields"].([]interface{})
-	if !ok {
+	if !ok && !usename && fsetting.RefField == "" {
 		return nil, fmt.Errorf("can't get fields from properties properties: %v  properties.fields: %v", fsetting.Properties, fsetting.Properties["fields"])
 	}
 
 	fields := []string{}
 	for _, f := range finter {
 		fields = append(fields, f.(string))
+	}
+
+	if fsetting.RefField != "" && !usename {
+		fields = append(fields, fsetting.RefField)
 	}
 
 	list := []Item{}
@@ -109,7 +116,12 @@ func handleMultiple(fv data.FieldValueNode, item data.ItemNode, items data.ItemM
 
 		refitem := items[uid]
 
-		ref := resolveReferenceItem(refitem, items, fields, lang)
+		var ref Item
+		if !usename {
+			ref = resolveReferenceItem(refitem, items, fields, lang)
+		} else {
+			ref = Item{Name: refitem.GetName()}
+		}
 		if err != nil {
 			return nil, fmt.Errorf("couldn't get referenced item in list. item %v field %v value %s. %w", item.GetId(), fv.GetName(), id, err)
 		}

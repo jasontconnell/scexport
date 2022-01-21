@@ -74,7 +74,8 @@ func writeContentXml(fullpath string, g Group) error {
 	items := []ContentItem{}
 	for _, item := range g.Items {
 		x := ContentItem{TypeName: g.Name, Name: item.Name}
-		x.Fields = []ContentField{}
+
+		xflds := []ContentField{}
 		for _, f := range item.Fields {
 			xf := ContentField{Name: f.Name}
 			if f.CData {
@@ -83,23 +84,32 @@ func writeContentXml(fullpath string, g Group) error {
 				xf.Value = f.Value
 			}
 			for _, ref := range f.Refs {
-				xref := ContentItem{}
+				xref := ContentItem{Name: ref.Name}
+				xrefflds := []ContentField{}
 				for _, xreffld := range ref.Fields {
 					if xreffld.Value != "" && xreffld.Name != "" {
-						xref.Fields = append(xref.Fields, ContentField{Name: xreffld.Name, Value: xreffld.Value})
+						xrefflds = append(xrefflds, ContentField{Name: xreffld.Name, Value: xreffld.Value})
 					}
 				}
-
-				if len(xref.Fields) > 0 {
-					xf.Refs = append(xf.Refs, xref)
+				if len(xrefflds) > 0 {
+					xref.Fields = &xrefflds
 				}
+				xf.Refs = append(xf.Refs, xref)
 			}
-			x.Fields = append(x.Fields, xf)
+			xflds = append(xflds, xf)
 		}
 
+		if len(xflds) > 0 {
+			x.Fields = &xflds
+		}
+
+		var bloblist []BlobRef
 		for _, b := range item.Blobs {
 			bref := BlobRef{Id: b.Id.String(), Filename: b.Filename}
-			x.Blobs = append(x.Blobs, bref)
+			bloblist = append(bloblist, bref)
+		}
+		if len(bloblist) > 0 {
+			x.Blobs = &bloblist
 		}
 
 		items = append(items, x)
