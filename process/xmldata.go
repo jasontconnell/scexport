@@ -19,6 +19,7 @@ type ContentItem struct {
 	XMLName  xml.Name        `xml:"item"`
 	TypeName string          `xml:"type,attr,omitempty"`
 	Name     string          `xml:"name,attr,omitempty"`
+	Path     string          `xml:"path,attr"`
 	Fields   *[]ContentField `xml:"fields>field"`
 	Blobs    *[]BlobRef      `xml:"blobrefs>blob,omitempty"`
 }

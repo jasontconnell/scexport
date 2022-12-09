@@ -120,7 +120,7 @@ func handleReferenceList(fv data.FieldValueNode, item data.ItemNode, items data.
 		if !usename {
 			ref = resolveReferenceItem(refitem, items, fields, lang)
 		} else {
-			ref = Item{Name: refitem.GetName()}
+			ref = Item{Name: refitem.GetName(), Path: refitem.GetPath()}
 		}
 		if err != nil {
 			return nil, fmt.Errorf("couldn't get referenced item in list. item %v field %v value %s. %w", item.GetId(), fv.GetName(), id, err)

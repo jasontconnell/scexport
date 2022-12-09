@@ -54,7 +54,7 @@ func getTemplateSettingsMap(settings conf.ExportSettings) (map[uuid.UUID]conf.Ex
 }
 
 func resolveReferenceItem(item data.ItemNode, m data.ItemMap, fields []string, lang data.Language) Item {
-	gitem := Item{Name: item.GetName(), Fields: []Field{}}
+	gitem := Item{Name: item.GetName(), Path: item.GetPath(), Fields: []Field{}}
 	for _, fn := range fields {
 		itmp := item.GetTemplate()
 		fld := itmp.FindField(fn)
@@ -101,7 +101,7 @@ func resolveReferenceItem(item data.ItemNode, m data.ItemMap, fields []string, l
 }
 
 func resolveItem(item data.ItemNode, m data.ItemMap, tsetting TemplateSettings, lang data.Language) Item {
-	gitem := Item{Name: item.GetName(), Fields: []Field{}}
+	gitem := Item{Name: item.GetName(), Path: item.GetPath(), Fields: []Field{}}
 	for _, fs := range tsetting.Fields {
 		itmp := item.GetTemplate()
 		fld := itmp.FindField(fs.Name)

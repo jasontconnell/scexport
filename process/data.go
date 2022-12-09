@@ -18,6 +18,7 @@ type Group struct {
 
 type Item struct {
 	Name   string
+	Path   string
 	Fields []Field
 	Blobs  []Blob
 }

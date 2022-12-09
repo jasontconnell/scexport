@@ -73,7 +73,7 @@ func writeContentXml(fullpath string, g Group) error {
 
 	items := []ContentItem{}
 	for _, item := range g.Items {
-		x := ContentItem{TypeName: g.Name, Name: item.Name}
+		x := ContentItem{TypeName: g.Name, Name: item.Name, Path: item.Path}
 
 		xflds := []ContentField{}
 		for _, f := range item.Fields {
