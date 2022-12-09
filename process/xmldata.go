@@ -12,7 +12,7 @@ type BlobXml struct {
 
 type ContentsXml struct {
 	XMLName      xml.Name      `xml:"items"`
-	ContentItems []ContentItem `xml:"items"`
+	ContentItems []ContentItem `xml:"item"`
 }
 
 type ContentItem struct {
