@@ -1,20 +1,18 @@
 package process
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"sort"
 
-	"github.com/google/uuid"
-	"github.com/jasontconnell/scexport/conf"
-	"github.com/jasontconnell/sitecore/api"
 	"github.com/jasontconnell/sitecore/data"
 )
 
-func Resolve(items []data.ItemNode, m data.ItemMap, settings map[uuid.UUID]TemplateSettings, lang data.Language) ([]Group, error) {
+func Resolve(pkg *DataPackage, settings Settings, lang data.Language) ([]Group, error) {
 	gmap := map[string]Group{}
-	for _, item := range items {
-		tsettings, ok := settings[item.GetTemplateId()]
+	for _, item := range pkg.ReportItems {
+		tsettings, ok := settings.Templates[item.GetTemplateId()]
 		if !ok {
 			continue
 		}
@@ -25,7 +23,7 @@ func Resolve(items []data.ItemNode, m data.ItemMap, settings map[uuid.UUID]Templ
 			group = Group{Name: gkey}
 		}
 
-		item := resolveItem(item, m, tsettings, lang)
+		item := resolveItem(item, pkg, tsettings, lang)
 		for _, b := range item.Blobs {
 			group.Blobs = append(group.Blobs, b)
 		}
@@ -41,20 +39,12 @@ func Resolve(items []data.ItemNode, m data.ItemMap, settings map[uuid.UUID]Templ
 	return groups, nil
 }
 
-func getTemplateSettingsMap(settings conf.ExportSettings) (map[uuid.UUID]conf.ExportTemplate, error) {
-	lookup := map[uuid.UUID]conf.ExportTemplate{}
-	for _, t := range settings.Templates {
-		uid, err := api.TryParseUUID(t.TemplateId)
-		if err != nil {
-			return nil, fmt.Errorf("can't parse template id %s. %w", t.TemplateId, err)
-		}
-		lookup[uid] = t
+func resolveReferenceItem(item data.ItemNode, pkg *DataPackage, fields []string, lang data.Language) (Item, error) {
+	if item == nil {
+		return Item{}, fmt.Errorf("item is nil")
 	}
-	return lookup, nil
-}
-
-func resolveReferenceItem(item data.ItemNode, m data.ItemMap, fields []string, lang data.Language) Item {
 	gitem := Item{Name: item.GetName(), Path: item.GetPath(), Fields: []Field{}}
+	var err error
 	for _, fn := range fields {
 		itmp := item.GetTemplate()
 		fld := itmp.FindField(fn)
@@ -70,13 +60,13 @@ func resolveReferenceItem(item data.ItemNode, m data.ItemMap, fields []string, l
 
 		fnm := fv.GetName()
 		gfld := Field{Name: fnm}
-		result, err := ResolveField(fv, fld, item, m, FieldSettings{}, lang)
+		result, err := ResolveField(fv, fld, item, pkg, FieldSettings{}, lang)
 		if err != nil {
 			shortval := fv.GetValue()
 			if len(shortval) > 100 {
 				shortval = string(shortval[:99]) + "..."
 			}
-			log.Printf("couldn't resolve field %v (id: %v) %v (id: %v) Language: %v Field Value: %v (root cause: %v)\n", item.GetName(), item.GetId(), fv.GetName(), fv.GetFieldId(), lang, shortval, err)
+			err = errors.Join(err, fmt.Errorf("couldn't resolve field %v (id: %v) %v (id: %v) Language: %v Field Value: %v (root cause: %v)\n", item.GetName(), item.GetId(), fv.GetName(), fv.GetFieldId(), lang, shortval, err))
 			continue
 		}
 		gfld.Value = result.GetValue()
@@ -97,10 +87,10 @@ func resolveReferenceItem(item data.ItemNode, m data.ItemMap, fields []string, l
 		return gitem.Fields[i].Name < gitem.Fields[j].Name
 	})
 
-	return gitem
+	return gitem, err
 }
 
-func resolveItem(item data.ItemNode, m data.ItemMap, tsetting TemplateSettings, lang data.Language) Item {
+func resolveItem(item data.ItemNode, pkg *DataPackage, tsetting TemplateSettings, lang data.Language) Item {
 	gitem := Item{Name: item.GetName(), Path: item.GetPath(), Fields: []Field{}}
 	for _, fs := range tsetting.Fields {
 		itmp := item.GetTemplate()
@@ -120,7 +110,7 @@ func resolveItem(item data.ItemNode, m data.ItemMap, tsetting TemplateSettings, 
 			fnm = fs.Alias
 		}
 		gfld := Field{Name: fnm}
-		result, err := ResolveField(fv, fld, item, m, fs, lang)
+		result, err := ResolveField(fv, fld, item, pkg, fs, lang)
 		if err != nil {
 			shortval := fv.GetValue()
 			if len(shortval) > 100 {

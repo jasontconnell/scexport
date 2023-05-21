@@ -4,7 +4,6 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
-	"os"
 	"time"
 
 	"github.com/jasontconnell/scexport/conf"
@@ -39,31 +38,27 @@ func main() {
 
 	lang := data.Language(settings.FilterLanguage)
 
-	items, itemMap, err := process.ReadAll(cfg.ConnectionString, psettings, cfg.GlobalTemplateFilter, lang)
-	if err != nil {
+	pkg, err := process.ReadAll(cfg.ConnectionString, psettings, lang)
+	if err != nil || pkg == nil {
 		log.Fatal("reading items. ", err)
 	}
 
-	groups, err := process.Resolve(items, itemMap, psettings, lang)
+	groups, err := process.Resolve(pkg, psettings, lang)
 	if err != nil {
 		log.Fatal("resolving items. ", err)
 	}
 
-	wd, _ := os.Getwd()
 	ws := process.WriteSettings{
 		ContentFormat:   settings.Output.ContentFormat,
 		ContentLocation: settings.Output.ContentLocation,
 		BlobLocation:    settings.Output.BlobLocation,
 	}
 
-	blobData, err := process.ReadBlobs(cfg.ConnectionString, groups)
-	if err != nil {
-		log.Fatal("couldn't read blobs. ", err)
-	}
+	log.Println("processing blobs in parallel")
 
-	err = process.WriteBlobs(wd, blobData, ws)
+	process.ProcessBlobs(cfg.ConnectionString, groups, ws)
 
-	err = process.WriteContent(wd, groups, ws)
+	err = process.WriteContent(groups, ws)
 	if err != nil {
 		log.Fatal("writing contents. ", err)
 	}

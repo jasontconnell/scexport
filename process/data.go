@@ -2,6 +2,7 @@ package process
 
 import (
 	"github.com/google/uuid"
+	"github.com/jasontconnell/sitecore/data"
 )
 
 type BlobData struct {
@@ -46,6 +47,11 @@ type WriteSettings struct {
 	BlobLocation    string
 }
 
+type Settings struct {
+	Templates  map[uuid.UUID]TemplateSettings
+	References map[uuid.UUID]TemplateSettings
+}
+
 type TemplateSettings struct {
 	TemplateId uuid.UUID
 	Name       string
@@ -53,9 +59,20 @@ type TemplateSettings struct {
 	Paths      []string
 }
 
+type DataPackage struct {
+	ReportItems []data.ItemNode
+	Items       data.ItemMap
+	RefItems    data.ItemMap
+}
+
 type FieldSettings struct {
 	Name       string
-	Properties map[string]interface{}
-	RefField   string
 	Alias      string
+	RefField   string
+	Properties map[string]interface{}
+}
+
+type RefTemplate struct {
+	Name  string
+	Field string
 }

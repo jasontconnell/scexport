@@ -1,43 +1,55 @@
 package process
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 	"github.com/jasontconnell/scexport/conf"
 	"github.com/jasontconnell/sitecore/api"
 )
 
-func GetSettings(cfg conf.ExportSettings) (map[uuid.UUID]TemplateSettings, error) {
-	tsmap := map[uuid.UUID]TemplateSettings{}
+func GetSettings(cfg conf.ExportSettings) (Settings, error) {
+	tsmap := make(map[uuid.UUID]TemplateSettings)
+
+	rmap := make(map[uuid.UUID]TemplateSettings)
+	for _, ref := range cfg.ReferenceTemplates {
+		id := api.MustParseUUID(ref.TemplateId)
+		r := TemplateSettings{Name: ref.Name, Paths: ref.Paths, TemplateId: id, Fields: getFieldSettingsMap(ref.Fields)}
+		rmap[id] = r
+	}
 
 	for _, tscfg := range cfg.Templates {
-		id, err := api.TryParseUUID(tscfg.TemplateId)
-		if err != nil {
-			return nil, fmt.Errorf("couldn't parse template id from settings. %v %w", tscfg.TemplateId, err)
-		}
+		id := api.MustParseUUID(tscfg.TemplateId)
 
 		settings := TemplateSettings{
 			TemplateId: id,
 			Name:       tscfg.Name,
 			Paths:      tscfg.Paths,
-			Fields:     map[string]FieldSettings{},
-		}
-
-		for _, fld := range tscfg.Fields {
-			pmap := map[string]interface{}{}
-			for k, v := range fld.Properties {
-				pmap[k] = v
-			}
-			key := fld.Name
-			if fld.Alias != "" {
-				key += ":" + fld.Alias
-			}
-			settings.Fields[key] = FieldSettings{Name: fld.Name, Alias: fld.Alias, Properties: pmap, RefField: fld.RefField}
+			Fields:     getFieldSettingsMap(tscfg.Fields),
 		}
 
 		tsmap[id] = settings
 	}
 
-	return tsmap, nil
+	return Settings{Templates: tsmap, References: rmap}, nil
+}
+
+func getFieldSettingsMap(list []conf.ExportField) map[string]FieldSettings {
+	m := make(map[string]FieldSettings)
+	for _, fld := range list {
+		key := fld.Name
+		if fld.Alias != "" {
+			key += ":" + fld.Alias
+		}
+
+		pmap := map[string]interface{}{}
+		for k, v := range fld.Properties {
+			pmap[k] = v
+		}
+
+		m[key] = FieldSettings{
+			Name:       fld.Name,
+			Alias:      fld.Alias,
+			Properties: pmap,
+		}
+	}
+	return m
 }

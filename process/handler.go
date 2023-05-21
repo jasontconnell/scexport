@@ -11,40 +11,65 @@ import (
 	"github.com/jasontconnell/sitecore/data"
 )
 
-var mediaReg *regexp.Regexp = regexp.MustCompile(`<image mediaid="\{([A-F0-9\-]+)\}" />`)
+var mediaReg *regexp.Regexp = regexp.MustCompile(`<image mediaid="\{([A-F0-9\-]+)\}" ?.*?/>`)
 var mediaRteReg *regexp.Regexp = regexp.MustCompile(`src="-\/media\/([a-f0-9]{32})\.ashx`)
 
-type FieldHandler func(fv data.FieldValueNode, item data.ItemNode, items data.ItemMap, fsetting FieldSettings, lang data.Language) (HandlerResult, error)
+type FieldHandler func(
+	fv data.FieldValueNode,
+	item data.ItemNode,
+	pkg *DataPackage,
+	fsetting FieldSettings,
+	lang data.Language) (HandlerResult, error)
 
 var fieldHandlers map[string]FieldHandler
 
 func init() {
 	fieldHandlers = map[string]FieldHandler{
-		"Single-Line Text":   handleString,
-		"Droplink":           handleReference,
-		"Treelist":           handleReferenceList,
-		"MultiRoot Treelist": handleReferenceList,
-		"Datetime":           handleString,
-		"Rich Text":          handleRichText,
-		"Multi-Line Text":    handleRichText,
-		"Image":              handleImage,
-		"attachment":         handleAttachment,
+		"Single-Line Text":      handleString,
+		"Droplink":              handleReference,
+		"Treelist":              handleReferenceList,
+		"MultiRoot Treelist":    handleReferenceList,
+		"Multilist with Search": handleReferenceList,
+		"Datetime":              handleString,
+		"Rich Text":             handleRichText,
+		"Multi-Line Text":       handleRichText,
+		"Image":                 handleImage,
+		"attachment":            handleAttachment,
 	}
 }
 
-func ResolveField(fv data.FieldValueNode, tfld data.TemplateFieldNode, item data.ItemNode, items data.ItemMap, fsetting FieldSettings, lang data.Language) (HandlerResult, error) {
+func ResolveField(
+	fv data.FieldValueNode,
+	tfld data.TemplateFieldNode,
+	item data.ItemNode,
+	pkg *DataPackage,
+	fsetting FieldSettings,
+	lang data.Language) (HandlerResult, error) {
+
 	fh, ok := fieldHandlers[tfld.GetType()]
 	if !ok {
 		return handlerResult{}, fmt.Errorf("no handler for %s", tfld.GetType())
 	}
-	return fh(fv, item, items, fsetting, lang)
+	return fh(fv, item, pkg, fsetting, lang)
 }
 
-func handleString(fv data.FieldValueNode, item data.ItemNode, items data.ItemMap, fsetting FieldSettings, lang data.Language) (HandlerResult, error) {
+func handleString(
+	fv data.FieldValueNode,
+	item data.ItemNode,
+	pkg *DataPackage,
+	fsetting FieldSettings,
+	lang data.Language) (HandlerResult, error) {
+
 	return handlerResult{value: fv.GetValue()}, nil
 }
 
-func handleRichText(fv data.FieldValueNode, item data.ItemNode, items data.ItemMap, fsetting FieldSettings, lang data.Language) (HandlerResult, error) {
+func handleRichText(
+	fv data.FieldValueNode,
+	item data.ItemNode,
+	pkg *DataPackage,
+	fsetting FieldSettings,
+	lang data.Language) (HandlerResult, error) {
+
 	str := fv.GetValue()
 	allgroups := mediaRteReg.FindAllStringSubmatch(str, -1)
 
@@ -60,9 +85,9 @@ func handleRichText(fv data.FieldValueNode, item data.ItemNode, items data.ItemM
 			return handlerResult{}, fmt.Errorf("couldn't parse media id in rte field %s %s. %w", fv.GetName(), fv.GetItemId(), err)
 		}
 
-		b, err := extractBlob(id, items, lang)
+		b, err := extractBlob(id, pkg, lang)
 		if err != nil {
-			return handlerResult{}, fmt.Errorf("extracting blob. item %v. %w", fv.GetItemId(), err)
+			return handlerResult{}, fmt.Errorf("handleRichText: extracting blob. item %v. %w", fv.GetItemId(), err)
 		}
 		hr.blobs = append(hr.blobs, b)
 
@@ -74,7 +99,13 @@ func handleRichText(fv data.FieldValueNode, item data.ItemNode, items data.ItemM
 	return hr, nil
 }
 
-func handleReferenceList(fv data.FieldValueNode, item data.ItemNode, items data.ItemMap, fsetting FieldSettings, lang data.Language) (HandlerResult, error) {
+func handleReferenceList(
+	fv data.FieldValueNode,
+	item data.ItemNode,
+	pkg *DataPackage,
+	fsetting FieldSettings,
+	lang data.Language) (HandlerResult, error) {
+
 	refval := fv.GetValue()
 	ids := strings.Split(refval, "|")
 
@@ -82,12 +113,8 @@ func handleReferenceList(fv data.FieldValueNode, item data.ItemNode, items data.
 		return nil, nil
 	}
 
-	// if len(ids) == 1 && fsetting.RefField != "" {
-	// 	return handleReference(fv, item, items, fsetting, lang)
-	// }
-
 	if v, ok := fsetting.Properties["blob"].(bool); ok && v {
-		return handleReference(fv, item, items, fsetting, lang)
+		return handleReference(fv, item, pkg, fsetting, lang)
 	}
 
 	usename := fsetting.RefField == ":name"
@@ -114,16 +141,17 @@ func handleReferenceList(fv data.FieldValueNode, item data.ItemNode, items data.
 			return nil, fmt.Errorf("parsing id in item %v field %v value %s", item.GetId(), fv.GetName(), id)
 		}
 
-		refitem := items[uid]
+		refitem := pkg.RefItems[uid]
 
 		var ref Item
+		var referr error
 		if !usename {
-			ref = resolveReferenceItem(refitem, items, fields, lang)
+			ref, referr = resolveReferenceItem(refitem, pkg, fields, lang)
 		} else {
 			ref = Item{Name: refitem.GetName(), Path: refitem.GetPath()}
 		}
-		if err != nil {
-			return nil, fmt.Errorf("couldn't get referenced item in list. item %v field %v value %s. %w", item.GetId(), fv.GetName(), id, err)
+		if referr != nil {
+			return nil, fmt.Errorf("couldn't get referenced item in list. item %v field %v value %s. %w", item.GetId(), fv.GetName(), id, referr)
 		}
 
 		list = append(list, ref)
@@ -134,7 +162,13 @@ func handleReferenceList(fv data.FieldValueNode, item data.ItemNode, items data.
 	return hr, nil
 }
 
-func handleReference(fv data.FieldValueNode, item data.ItemNode, items data.ItemMap, fsetting FieldSettings, lang data.Language) (HandlerResult, error) {
+func handleReference(
+	fv data.FieldValueNode,
+	item data.ItemNode,
+	pkg *DataPackage,
+	fsetting FieldSettings,
+	lang data.Language) (HandlerResult, error) {
+
 	refval := fv.GetValue()
 
 	if len(refval) == 0 {
@@ -146,11 +180,48 @@ func handleReference(fv data.FieldValueNode, item data.ItemNode, items data.Item
 		return handlerResult{}, fmt.Errorf("couldn't parse ref id %s %w", refval, err)
 	}
 
-	return getRefItemResult(uid, item, items, fsetting, lang)
+	return getRefItemResult(uid, fv, item, pkg, fsetting, lang)
 }
 
-func getRefItemResult(id uuid.UUID, item data.ItemNode, items data.ItemMap, fsetting FieldSettings, lang data.Language) (HandlerResult, error) {
-	refitem, ok := items[id]
+func handleImage(
+	fv data.FieldValueNode,
+	item data.ItemNode,
+	pkg *DataPackage,
+	fsetting FieldSettings,
+	lang data.Language) (HandlerResult, error) {
+
+	val := fv.GetValue()
+	if val == "" {
+		return handlerResult{}, nil
+	}
+	g := mediaReg.FindStringSubmatch(val)
+	if len(g) != 2 {
+		return handlerResult{}, fmt.Errorf("image field not in expected format %s", val)
+	}
+	id, err := uuid.Parse(g[1])
+	if err != nil {
+		return handlerResult{}, fmt.Errorf("image field not in expected format %s parsed %s %w", fv.GetValue(), g[1], err)
+	}
+	b, err := extractBlob(id, pkg, lang)
+	if err != nil {
+		return handlerResult{}, fmt.Errorf("handleImage: extracting blob. %w", err)
+	}
+
+	hr := handlerResult{value: "blobref:" + b.GetId().String()}
+	hr.blobs = append(hr.blobs, b)
+
+	return hr, nil
+}
+
+func getRefItemResult(
+	id uuid.UUID,
+	fv data.FieldValueNode,
+	item data.ItemNode,
+	pkg *DataPackage,
+	fsetting FieldSettings,
+	lang data.Language) (HandlerResult, error) {
+
+	refitem, ok := pkg.RefItems[id]
 	if !ok {
 		return handlerResult{}, fmt.Errorf("reference not found in map %v. referenced by item %v", id, item.GetId())
 	}
@@ -182,14 +253,14 @@ func getRefItemResult(id uuid.UUID, item data.ItemNode, items data.ItemMap, fset
 				log.Printf("no value for ref field %s (referencing %s id: %v) on item %s (id: %v)", reft.GetName(), fld.GetName(), fld.GetId(), refitem.GetName(), refitem.GetId())
 				return handlerResult{}, nil
 			}
-			hr, err := ResolveField(reffv, fld, refitem, items, fsetting, lang)
+			hr, err := ResolveField(reffv, fld, refitem, pkg, fsetting, lang)
 			return hr, err
 		} else {
 			return handlerResult{value: refitem.GetName()}, nil
 		}
 	} else {
 		// blob ref is for when a treelist or something references files or images
-		b, err := extractBlob(id, items, lang)
+		b, err := extractBlob(id, pkg, lang)
 		if err != nil {
 			return handlerResult{}, fmt.Errorf("extract blob referenced by %v. %w", id, err)
 		}
@@ -197,34 +268,10 @@ func getRefItemResult(id uuid.UUID, item data.ItemNode, items data.ItemMap, fset
 	}
 }
 
-func handleImage(fv data.FieldValueNode, item data.ItemNode, items data.ItemMap, fsetting FieldSettings, lang data.Language) (HandlerResult, error) {
-	val := fv.GetValue()
-	if val == "" {
-		return handlerResult{}, nil
-	}
-	g := mediaReg.FindStringSubmatch(val)
-	if len(g) != 2 {
-		return handlerResult{}, fmt.Errorf("image field not in expected format %s", val)
-	}
-	id, err := uuid.Parse(g[1])
-	if err != nil {
-		return handlerResult{}, fmt.Errorf("image field not in expected format %s parsed %s %w", fv.GetValue(), g[1], err)
-	}
-	b, err := extractBlob(id, items, lang)
-	if err != nil {
-		return handlerResult{}, fmt.Errorf("extracting blob. %w", err)
-	}
-
-	hr := handlerResult{value: "blobref:" + b.GetId().String()}
-	hr.blobs = append(hr.blobs, b)
-
-	return hr, nil
-}
-
 // image id points to the media library
 // will find out the blob data and return that
-func extractBlob(mediaId uuid.UUID, items data.ItemMap, lang data.Language) (BlobResult, error) {
-	media, ok := items[mediaId]
+func extractBlob(mediaId uuid.UUID, pkg *DataPackage, lang data.Language) (BlobResult, error) {
+	media, ok := pkg.RefItems[mediaId]
 	if !ok {
 		return blobResult{}, fmt.Errorf("referenced blob not found %v", mediaId)
 	}
@@ -263,7 +310,13 @@ func extractBlob(mediaId uuid.UUID, items data.ItemMap, lang data.Language) (Blo
 	return b, nil
 }
 
-func handleAttachment(fv data.FieldValueNode, item data.ItemNode, items data.ItemMap, fsetting FieldSettings, lang data.Language) (HandlerResult, error) {
+func handleAttachment(
+	fv data.FieldValueNode,
+	item data.ItemNode,
+	pkg *DataPackage,
+	fsetting FieldSettings,
+	lang data.Language) (HandlerResult, error) {
+
 	val := fv.GetValue()
 	// attachment field just has a blob id
 	blobId, err := api.TryParseUUID(val)

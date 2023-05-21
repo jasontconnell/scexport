@@ -3,8 +3,8 @@ package conf
 import "github.com/jasontconnell/conf"
 
 type Config struct {
-	ConnectionString     string   `json:"connectionString"`
-	GlobalTemplateFilter []string `json:"globalTemplateFilter"`
+	ConnectionString string `json:"connectionString"`
+	ProtobufLocation string `json:"protobufLocation"`
 }
 
 type WriteSettings struct {
@@ -14,9 +14,10 @@ type WriteSettings struct {
 }
 
 type ExportSettings struct {
-	FilterLanguage string           `json:"filterLanguage"`
-	Templates      []ExportTemplate `json:"templates"`
-	Output         WriteSettings    `json:"output"`
+	FilterLanguage     string           `json:"filterLanguage"`
+	Templates          []ExportTemplate `json:"templates"`
+	ReferenceTemplates []ExportTemplate `json:"referenceTemplates"`
+	Output             WriteSettings    `json:"output"`
 }
 
 type ExportTemplate struct {
@@ -29,7 +30,7 @@ type ExportTemplate struct {
 type ExportField struct {
 	Name       string                 `json:"name"`
 	Alias      string                 `json:"alias"`
-	RefField   string                 `json:"reffield"`
+	RefField   string                 `json:"refTemplates"`
 	Properties map[string]interface{} `json:"properties"`
 }
 

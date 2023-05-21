@@ -1,44 +1,21 @@
 package process
 
 import (
-	"encoding/base64"
 	"encoding/xml"
 	"fmt"
 	"os"
 	"path/filepath"
 )
 
-func WriteBlobs(dir string, bdata []BlobData, settings WriteSettings) error {
-	fulldir := filepath.Join(dir, settings.BlobLocation)
+func WriteContent(groups []Group, settings WriteSettings) error {
+	fulldir := settings.ContentLocation
 	err := os.MkdirAll(fulldir, os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("couldn't create dir structure %s. %w", dir, err)
-	}
-	isxml := settings.ContentFormat == "xml"
-	for _, b := range bdata {
-		if isxml {
-			bxml := BlobXml{Id: b.Id.String(), Filename: b.Filename, Length: len(b.Data), Data: base64.StdEncoding.EncodeToString(b.Data)}
-			path := filepath.Join(fulldir, bxml.Filename+".xml")
-			err = writeBlobXml(path, bxml)
-			if err != nil {
-				return fmt.Errorf("writing file contents for %s, path: %s. %w", b.Filename, path, err)
-			}
-		}
-	}
-
-	return nil
-}
-
-func WriteContent(dir string, groups []Group, settings WriteSettings) error {
-	fulldir := filepath.Join(dir, settings.ContentLocation)
-	err := os.MkdirAll(fulldir, os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("couldn't create dir structure %s. %w", dir, err)
+		return fmt.Errorf("couldn't create dir structure %s. %w", fulldir, err)
 	}
 
 	isxml := settings.ContentFormat == "xml"
 	for _, g := range groups {
-
 		if isxml {
 			path := filepath.Join(fulldir, g.Name+".xml")
 			err = writeContentXml(path, g)
@@ -46,8 +23,6 @@ func WriteContent(dir string, groups []Group, settings WriteSettings) error {
 				return fmt.Errorf("writing file contents for %s, path: %s. %w", g.Name, path, err)
 			}
 		}
-
-		// write blobs
 	}
 	return nil
 }
