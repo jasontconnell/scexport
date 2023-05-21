@@ -30,9 +30,9 @@ func ReadAll(connstr string, settings Settings, lang data.Language) (*DataPackag
 		return nil, fmt.Errorf("loading items %w", err)
 	}
 	log.Println("loaded", len(items), "items")
+	_, m := api.LoadItemMap(items)
 
 	log.Println("loading templates")
-	_, m := api.LoadItemMap(items)
 	tlist, err := api.LoadTemplates(connstr)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't load templates %w", err)

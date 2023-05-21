@@ -18,6 +18,7 @@ type Group struct {
 }
 
 type Item struct {
+	ID     string
 	Name   string
 	Path   string
 	Fields []Field
@@ -46,6 +47,7 @@ type WriteSettings struct {
 	ContentFormat   string
 	ContentLocation string
 	BlobLocation    string
+	WriteBlobs      bool
 }
 
 type Settings struct {

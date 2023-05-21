@@ -52,11 +52,13 @@ func main() {
 		ContentFormat:   settings.Output.ContentFormat,
 		ContentLocation: settings.Output.ContentLocation,
 		BlobLocation:    settings.Output.BlobLocation,
+		WriteBlobs:      settings.Output.WriteBlobs,
 	}
 
-	log.Println("processing blobs in parallel")
-	process.ProcessBlobs(cfg.ConnectionString, groups, ws)
-
+	if ws.WriteBlobs {
+		log.Println("processing blobs in parallel")
+		process.ProcessBlobs(cfg.ConnectionString, groups, ws)
+	}
 	err = process.WriteContent(groups, ws)
 	if err != nil {
 		log.Fatal("writing contents. ", err)

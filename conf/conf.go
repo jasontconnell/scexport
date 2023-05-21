@@ -11,6 +11,7 @@ type WriteSettings struct {
 	ContentFormat   string `json:"contentFormat"`
 	ContentLocation string `json:"contentLocation"`
 	BlobLocation    string `json:"blobLocation"`
+	WriteBlobs      bool   `json:"writeBlobs"`
 }
 
 type ExportSettings struct {

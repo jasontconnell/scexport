@@ -48,7 +48,7 @@ func writeContentXml(fullpath string, g Group) error {
 
 	items := []ContentItem{}
 	for _, item := range g.Items {
-		x := ContentItem{TypeName: g.Name, Name: item.Name, Path: item.Path}
+		x := ContentItem{ID: item.ID, TypeName: g.Name, Name: item.Name, Path: item.Path}
 
 		xflds := []ContentField{}
 		for _, f := range item.Fields {
@@ -80,7 +80,7 @@ func writeContentXml(fullpath string, g Group) error {
 
 		var bloblist []BlobRef
 		for _, b := range item.Blobs {
-			bref := BlobRef{Id: b.Id.String(), Filename: b.Filename}
+			bref := BlobRef{Id: b.Id.String(), Filename: b.Filename, Path: b.Path}
 			bloblist = append(bloblist, bref)
 		}
 		if len(bloblist) > 0 {

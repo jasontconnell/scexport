@@ -17,6 +17,7 @@ type ContentsXml struct {
 
 type ContentItem struct {
 	XMLName  xml.Name        `xml:"item"`
+	ID       string          `xml:"id,attr"`
 	TypeName string          `xml:"type,attr,omitempty"`
 	Name     string          `xml:"name,attr,omitempty"`
 	Path     string          `xml:"path,attr"`

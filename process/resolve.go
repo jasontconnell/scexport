@@ -43,7 +43,7 @@ func resolveReferenceItem(item data.ItemNode, pkg *DataPackage, fields []string,
 	if item == nil {
 		return Item{}, fmt.Errorf("item is nil")
 	}
-	gitem := Item{Name: item.GetName(), Path: item.GetPath(), Fields: []Field{}}
+	gitem := Item{ID: item.GetId().String(), Name: item.GetName(), Path: item.GetPath(), Fields: []Field{}}
 	var err error
 	for _, fn := range fields {
 		itmp := item.GetTemplate()
@@ -73,7 +73,7 @@ func resolveReferenceItem(item data.ItemNode, pkg *DataPackage, fields []string,
 		gfld.CData = result.IsHtml()
 
 		for _, blob := range result.GetBlobs() {
-			b := Blob{Id: blob.GetId(), Filename: blob.GetName() + "." + blob.GetExt()}
+			b := Blob{Id: blob.GetId(), Filename: blob.GetName() + "." + blob.GetExt(), Path: blob.GetPath()}
 			for _, attr := range blob.GetAttrs() {
 				b.Attrs = append(b.Attrs, Attr{Name: attr.Name, Value: attr.Value})
 			}
@@ -91,7 +91,7 @@ func resolveReferenceItem(item data.ItemNode, pkg *DataPackage, fields []string,
 }
 
 func resolveItem(item data.ItemNode, pkg *DataPackage, tsetting TemplateSettings, lang data.Language) Item {
-	gitem := Item{Name: item.GetName(), Path: item.GetPath(), Fields: []Field{}}
+	gitem := Item{ID: item.GetId().String(), Name: item.GetName(), Path: item.GetPath(), Fields: []Field{}}
 	for _, fs := range tsetting.Fields {
 		itmp := item.GetTemplate()
 		fld := itmp.FindField(fs.Name)
@@ -123,7 +123,7 @@ func resolveItem(item data.ItemNode, pkg *DataPackage, tsetting TemplateSettings
 		gfld.CData = result.IsHtml()
 
 		for _, blob := range result.GetBlobs() {
-			b := Blob{Id: blob.GetId(), Filename: blob.GetName() + "." + blob.GetExt()}
+			b := Blob{Id: blob.GetId(), Filename: blob.GetName() + "." + blob.GetExt(), Path: blob.GetPath()}
 			for _, attr := range blob.GetAttrs() {
 				b.Attrs = append(b.Attrs, Attr{Name: attr.Name, Value: attr.Value})
 			}
