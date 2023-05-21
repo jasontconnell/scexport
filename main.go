@@ -55,7 +55,6 @@ func main() {
 	}
 
 	log.Println("processing blobs in parallel")
-
 	process.ProcessBlobs(cfg.ConnectionString, groups, ws)
 
 	err = process.WriteContent(groups, ws)

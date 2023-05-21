@@ -46,6 +46,10 @@ func ResolveField(
 	fsetting FieldSettings,
 	lang data.Language) (HandlerResult, error) {
 
+	if fsetting.Name == IdField {
+		return handlerResult{value: item.GetId().String()}, nil
+	}
+
 	fh, ok := fieldHandlers[tfld.GetType()]
 	if !ok {
 		return handlerResult{}, fmt.Errorf("no handler for %s", tfld.GetType())
@@ -117,7 +121,7 @@ func handleReferenceList(
 		return handleReference(fv, item, pkg, fsetting, lang)
 	}
 
-	usename := fsetting.RefField == ":name"
+	usename := fsetting.RefField == ItemNameField
 
 	finter, ok := fsetting.Properties["fields"].([]interface{})
 	if !ok && !usename && fsetting.RefField == "" {
@@ -242,7 +246,7 @@ func getRefItemResult(
 	}
 
 	if !blobref {
-		if fsetting.RefField != ":name" {
+		if fsetting.RefField != ItemNameField {
 			fld := reft.FindField(fsetting.RefField)
 			if fld == nil {
 				return handlerResult{}, fmt.Errorf("couldn't find field %s on template %s %v", fsetting.RefField, reft.GetName(), reft.GetId())
@@ -304,7 +308,7 @@ func extractBlob(mediaId uuid.UUID, pkg *DataPackage, lang data.Language) (BlobR
 		return blobResult{}, fmt.Errorf("blob field is invalid format %s %w", blobidfv.GetValue(), err)
 	}
 
-	b := blobResult{blobId: blobId, name: media.GetName(), ext: extfv.GetValue()}
+	b := blobResult{blobId: blobId, name: media.GetName(), ext: extfv.GetValue(), path: media.GetPath()}
 	b.attrs = append(b.attrs, Attr{Name: "alt", Value: alt})
 
 	return b, nil

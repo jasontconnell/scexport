@@ -66,7 +66,7 @@ func ReadAll(connstr string, settings Settings, lang data.Language) (*DataPackag
 		}
 
 		for _, sfld := range stmp.Fields {
-			if sfld.Name == ItemNameField {
+			if sfld.Name == ItemNameField || sfld.Name == IdField {
 				continue
 			}
 			fld := t.FindField(sfld.Name)

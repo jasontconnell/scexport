@@ -36,4 +36,5 @@ type BlobRef struct {
 	XMLName  xml.Name `xml:"blob"`
 	Id       string   `xml:"id,attr"`
 	Filename string   `xml:"filename,attr"`
+	Path     string   `xml:"path,attr"`
 }

@@ -35,6 +35,7 @@ type Blob struct {
 	Id       uuid.UUID
 	Filename string
 	Attrs    []Attr
+	Path     string
 }
 
 type Attr struct {

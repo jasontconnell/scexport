@@ -7,6 +7,7 @@ type BlobResult interface {
 	GetName() string
 	GetAttrs() []Attr
 	GetExt() string
+	GetPath() string
 }
 
 type HandlerResult interface {
@@ -22,6 +23,7 @@ type blobResult struct {
 	name   string
 	attrs  []Attr
 	ext    string
+	path   string
 }
 
 type handlerResult struct {
@@ -64,4 +66,7 @@ func (b blobResult) GetAttrs() []Attr {
 }
 func (b blobResult) GetExt() string {
 	return b.ext
+}
+func (b blobResult) GetPath() string {
+	return b.path
 }
