@@ -11,6 +11,8 @@ type BlobResult interface {
 }
 
 type HandlerResult interface {
+	GetId() string
+	GetPath() string
 	GetValue() string
 	IsHtml() bool
 	GetBlobs() []BlobResult
@@ -27,10 +29,20 @@ type blobResult struct {
 }
 
 type handlerResult struct {
+	id    string
+	path  string
 	value string
 	blobs []BlobResult
 	html  bool
 	refs  []Item
+}
+
+func (h handlerResult) GetId() string {
+	return h.id
+}
+
+func (h handlerResult) GetPath() string {
+	return h.path
 }
 
 func (h handlerResult) GetValue() string {

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
+	"os"
 	"time"
 
 	"github.com/jasontconnell/scexport/conf"
@@ -16,10 +17,19 @@ func main() {
 	c := flag.String("c", "config.json", "config filename")
 	es := flag.String("settings", "", "export settings file")
 	q := flag.Bool("q", false, "quiet mode")
+	out := flag.String("output", "", "log output to filename")
 	flag.Parse()
 
 	if *q {
 		log.SetOutput(ioutil.Discard)
+	}
+
+	if *out != "" {
+		f, err := os.Create(*out)
+		if err != nil {
+			log.Fatalf("couldn't create log file %s. %v", *out, err)
+		}
+		log.SetOutput(f)
 	}
 
 	cfg, err := conf.LoadConfig(*c)

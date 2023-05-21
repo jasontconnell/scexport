@@ -11,7 +11,7 @@ import (
 	"github.com/jasontconnell/sitecore/data"
 )
 
-var mediaReg *regexp.Regexp = regexp.MustCompile(`<image mediaid="\{([A-F0-9\-]+)\}" ?.*?/>`)
+var mediaReg *regexp.Regexp = regexp.MustCompile(`<image .*?mediaid="\{([A-F0-9\-]+)\}" ?.*?/>`)
 var mediaRteReg *regexp.Regexp = regexp.MustCompile(`src="-\/media\/([a-f0-9]{32})\.ashx`)
 
 type FieldHandler func(
@@ -45,10 +45,6 @@ func ResolveField(
 	pkg *DataPackage,
 	fsetting FieldSettings,
 	lang data.Language) (HandlerResult, error) {
-
-	if fsetting.Name == IdField {
-		return handlerResult{value: item.GetId().String()}, nil
-	}
 
 	fh, ok := fieldHandlers[tfld.GetType()]
 	if !ok {
@@ -139,23 +135,33 @@ func handleReferenceList(
 
 	list := []Item{}
 	for _, id := range ids {
+		if id == "" {
+			continue
+		}
 		uid, err := api.TryParseUUID(id)
 
 		if err != nil {
-			return nil, fmt.Errorf("parsing id in item %v field %v value %s", item.GetId(), fv.GetName(), id)
+			log.Printf("couldn't parse uuid in item %v field %v value %s. skipping\n", item.GetId(), fv.GetName(), id)
+			continue
 		}
 
-		refitem := pkg.RefItems[uid]
+		refitem, ok := pkg.RefItems[uid]
+		if !ok {
+			log.Printf("ref item not found in item %v field %v value %s. skipping\n", item.GetId(), fv.GetName(), id)
+			continue
+		}
 
 		var ref Item
 		var referr error
 		if !usename {
 			ref, referr = resolveReferenceItem(refitem, pkg, fields, lang)
 		} else {
-			ref = Item{Name: refitem.GetName(), Path: refitem.GetPath()}
+			log.Println("use name", refitem.GetId(), refitem.GetPath())
+			ref = Item{ID: refitem.GetId().String(), Name: refitem.GetName(), Path: refitem.GetPath()}
 		}
 		if referr != nil {
-			return nil, fmt.Errorf("couldn't get referenced item in list. item %v field %v value %s. %w", item.GetId(), fv.GetName(), id, referr)
+			log.Printf("couldn't get referenced item in list. item %v field %v value %s. skipping\n", item.GetId(), fv.GetName(), id)
+			continue // return nil, fmt.Errorf("couldn't get referenced item in list. item %v field %v value %s. %w", item.GetId(), fv.GetName(), id, referr)
 		}
 
 		list = append(list, ref)
@@ -211,7 +217,7 @@ func handleImage(
 		return handlerResult{}, fmt.Errorf("handleImage: extracting blob. %w", err)
 	}
 
-	hr := handlerResult{value: "blobref:" + b.GetId().String()}
+	hr := handlerResult{id: b.GetId().String(), path: b.GetPath(), value: "blobref:" + b.GetId().String()}
 	hr.blobs = append(hr.blobs, b)
 
 	return hr, nil
@@ -260,7 +266,7 @@ func getRefItemResult(
 			hr, err := ResolveField(reffv, fld, refitem, pkg, fsetting, lang)
 			return hr, err
 		} else {
-			return handlerResult{value: refitem.GetName()}, nil
+			return handlerResult{id: refitem.GetId().String(), path: refitem.GetPath(), value: refitem.GetName()}, nil
 		}
 	} else {
 		// blob ref is for when a treelist or something references files or images
@@ -268,7 +274,7 @@ func getRefItemResult(
 		if err != nil {
 			return handlerResult{}, fmt.Errorf("extract blob referenced by %v. %w", id, err)
 		}
-		return handlerResult{value: "blobref:" + b.GetId().String(), blobs: []BlobResult{b}}, nil
+		return handlerResult{id: b.GetId().String(), path: b.GetPath(), value: "blobref:" + b.GetId().String(), blobs: []BlobResult{b}}, nil
 	}
 }
 

@@ -66,23 +66,36 @@ func ReadAll(connstr string, settings Settings, lang data.Language) (*DataPackag
 		}
 
 		for _, sfld := range stmp.Fields {
-			if sfld.Name == ItemNameField || sfld.Name == IdField {
+			if sfld.Name == ItemNameField {
 				continue
 			}
 			fld := t.FindField(sfld.Name)
 			if fld == nil {
 				return nil, fmt.Errorf("can't find field %s in template %s %v", sfld.Name, stmp.Name, stmp.TemplateId)
 			}
-			log.Println("adding field for filter", fld.GetName(), fld.GetId())
 			fields = append(fields, fld.GetId())
 		}
 	}
+
+	// get file/media fields and create date
+	fields = append(fields,
+		data.CreateDateFieldId,
+		data.BlobFieldId,
+		data.AltFieldId,
+		data.ExtensionFieldId,
+		data.MimeTypeFieldId,
+		data.VersionedBlobFieldId,
+		data.VersionedAltFieldId,
+		data.VersionedExtensionFieldId,
+		data.VersionedMimeTypeFieldId,
+	)
 
 	log.Println("loading field values with", len(fields), "fields")
 	fvlist, err := api.LoadFieldValuesTemplates(connstr, fields, templateIds, 20)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't load filtered field values. %w", err)
 	}
+
 	log.Println("loaded", len(fvlist), "field values")
 	api.AssignFieldValues(m, fvlist)
 
@@ -114,7 +127,7 @@ func filterMap(m data.ItemMap, tmps map[uuid.UUID]TemplateSettings) data.ItemMap
 		tm[t.TemplateId] = true
 	}
 
-	fmt.Println("filtering by paths", paths)
+	log.Println("filtering by paths", paths)
 
 	nm := api.FilterItemMap(m, paths)
 	nm = api.FilterItemMapCustom(nm, func(i data.ItemNode) bool {

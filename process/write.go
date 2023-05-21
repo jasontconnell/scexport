@@ -59,7 +59,7 @@ func writeContentXml(fullpath string, g Group) error {
 				xf.Value = f.Value
 			}
 			for _, ref := range f.Refs {
-				xref := ContentItem{Name: ref.Name}
+				xref := ContentItem{ID: ref.ID, Name: ref.Name, Path: ref.Path}
 				xrefflds := []ContentField{}
 				for _, xreffld := range ref.Fields {
 					if xreffld.Value != "" && xreffld.Name != "" {
