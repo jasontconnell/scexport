@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/google/uuid v1.3.0
 	github.com/jasontconnell/conf v1.1.1
-	github.com/jasontconnell/sitecore v1.5.5
+	github.com/jasontconnell/sitecore v1.6.0
 )
 
 require (
@@ -16,5 +16,3 @@ require (
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
 )
-
-replace github.com/jasontconnell/sitecore => ../sitecore
