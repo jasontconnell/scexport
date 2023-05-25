@@ -13,11 +13,7 @@ In this instance, the configuration will hold the connection string and a global
 ```
 {
     "connectionString": "user id=user;password=pwd;server=dbserver;Database=database_Master",
-    "globalTemplateFilter": [
-        "/sitecore/templates/Company/",
-        "/sitecore/templates/User Defined/Common/",
-        "/sitecore/templates/System/Media/"
-    ]
+    "protobufLocation: "./App_Data/items/master/items.master.dat"
 }
 ```
 

@@ -27,6 +27,7 @@ func init() {
 	fieldHandlers = map[string]FieldHandler{
 		"Single-Line Text":      handleString,
 		"Droplink":              handleReference,
+		"Droptree":              handleReference,
 		"Treelist":              handleReferenceList,
 		"MultiRoot Treelist":    handleReferenceList,
 		"Multilist with Search": handleReferenceList,
@@ -113,33 +114,13 @@ func handleReferenceList(
 		return nil, nil
 	}
 
-	if v, ok := fsetting.Properties["blob"].(bool); ok && v {
-		return handleReference(fv, item, pkg, fsetting, lang)
-	}
-
-	usename := fsetting.RefField == ItemNameField
-
-	finter, ok := fsetting.Properties["fields"].([]interface{})
-	if !ok && !usename && fsetting.RefField == "" {
-		return nil, fmt.Errorf("can't get fields from properties properties: %v  properties.fields: %v", fsetting.Properties, fsetting.Properties["fields"])
-	}
-
-	fields := []string{}
-	for _, f := range finter {
-		fields = append(fields, f.(string))
-	}
-
-	if fsetting.RefField != "" && !usename {
-		fields = append(fields, fsetting.RefField)
-	}
-
 	list := []Item{}
 	for _, id := range ids {
 		if id == "" {
 			continue
 		}
-		uid, err := api.TryParseUUID(id)
 
+		uid, err := api.TryParseUUID(id)
 		if err != nil {
 			log.Printf("couldn't parse uuid in item %v field %v value %s. skipping\n", item.GetId(), fv.GetName(), id)
 			continue
@@ -151,17 +132,10 @@ func handleReferenceList(
 			continue
 		}
 
-		var ref Item
-		var referr error
-		if !usename {
-			ref, referr = resolveReferenceItem(refitem, pkg, fields, lang)
-		} else {
-			log.Println("use name", refitem.GetId(), refitem.GetPath())
-			ref = Item{ID: refitem.GetId().String(), Name: refitem.GetName(), Path: refitem.GetPath()}
-		}
+		ref, referr := resolveReferenceItem(refitem, pkg, fsetting.RefField, lang)
 		if referr != nil {
 			log.Printf("couldn't get referenced item in list. item %v field %v value %s. skipping\n", item.GetId(), fv.GetName(), id)
-			continue // return nil, fmt.Errorf("couldn't get referenced item in list. item %v field %v value %s. %w", item.GetId(), fv.GetName(), id, referr)
+			continue
 		}
 
 		list = append(list, ref)
@@ -179,18 +153,7 @@ func handleReference(
 	fsetting FieldSettings,
 	lang data.Language) (HandlerResult, error) {
 
-	refval := fv.GetValue()
-
-	if len(refval) == 0 {
-		return handlerResult{}, nil
-	}
-
-	uid, err := api.TryParseUUID(refval)
-	if err != nil {
-		return handlerResult{}, fmt.Errorf("couldn't parse ref id %s %w", refval, err)
-	}
-
-	return getRefItemResult(uid, fv, item, pkg, fsetting, lang)
+	return handleReferenceList(fv, item, pkg, fsetting, lang)
 }
 
 func handleImage(
@@ -242,39 +205,21 @@ func getRefItemResult(
 		return handlerResult{}, nil
 	}
 
-	isblobrefval, ok := fsetting.Properties["blob"]
-	var blobref bool
-	if ok {
-		blobref, ok = isblobrefval.(bool)
-		if !ok {
-			return handlerResult{}, fmt.Errorf("invalid value for blob in properties. %v. expecting bool", isblobrefval)
+	if fsetting.RefField != ItemNameField {
+		fld := reft.FindField(fsetting.RefField)
+		if fld == nil {
+			return handlerResult{}, fmt.Errorf("couldn't find field %s on template %s %v", fsetting.RefField, reft.GetName(), reft.GetId())
 		}
-	}
 
-	if !blobref {
-		if fsetting.RefField != ItemNameField {
-			fld := reft.FindField(fsetting.RefField)
-			if fld == nil {
-				return handlerResult{}, fmt.Errorf("couldn't find field %s on template %s %v", fsetting.RefField, reft.GetName(), reft.GetId())
-			}
-
-			reffv := refitem.GetFieldValue(fld.GetId(), lang)
-			if reffv == nil {
-				log.Printf("no value for ref field %s (referencing %s id: %v) on item %s (id: %v)", reft.GetName(), fld.GetName(), fld.GetId(), refitem.GetName(), refitem.GetId())
-				return handlerResult{}, nil
-			}
-			hr, err := ResolveField(reffv, fld, refitem, pkg, fsetting, lang)
-			return hr, err
-		} else {
-			return handlerResult{id: refitem.GetId().String(), path: refitem.GetPath(), value: refitem.GetName()}, nil
+		reffv := refitem.GetFieldValue(fld.GetId(), lang)
+		if reffv == nil {
+			log.Printf("no value for ref field %s (referencing %s id: %v) on item %s (id: %v)", reft.GetName(), fld.GetName(), fld.GetId(), refitem.GetName(), refitem.GetId())
+			return handlerResult{}, nil
 		}
+		hr, err := ResolveField(reffv, fld, refitem, pkg, fsetting, lang)
+		return hr, err
 	} else {
-		// blob ref is for when a treelist or something references files or images
-		b, err := extractBlob(id, pkg, lang)
-		if err != nil {
-			return handlerResult{}, fmt.Errorf("extract blob referenced by %v. %w", id, err)
-		}
-		return handlerResult{id: b.GetId().String(), path: b.GetPath(), value: "blobref:" + b.GetId().String(), blobs: []BlobResult{b}}, nil
+		return handlerResult{id: refitem.GetId().String(), path: refitem.GetPath(), value: refitem.GetName()}, nil
 	}
 }
 

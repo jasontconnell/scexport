@@ -1,7 +1,6 @@
 package process
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -39,23 +38,23 @@ func Resolve(pkg *DataPackage, settings Settings, lang data.Language) ([]Group, 
 	return groups, nil
 }
 
-func resolveReferenceItem(item data.ItemNode, pkg *DataPackage, fields []string, lang data.Language) (Item, error) {
+func resolveReferenceItem(item data.ItemNode, pkg *DataPackage, field string, lang data.Language) (Item, error) {
 	if item == nil {
 		return Item{}, fmt.Errorf("item is nil")
 	}
 	gitem := Item{ID: item.GetId().String(), Name: item.GetName(), Path: item.GetPath(), Fields: []Field{}}
+
 	var err error
-	for _, fn := range fields {
+	if field != ItemNameField {
 		itmp := item.GetTemplate()
-		fld := itmp.FindField(fn)
+		fld := itmp.FindField(field)
 		if fld == nil {
-			continue
+			return gitem, fmt.Errorf("field not in template %s %v item id: %v", field, item.GetTemplateId(), item.GetId())
 		}
 
 		fv := item.GetFieldValue(fld.GetId(), lang)
 		if fv == nil {
-			// nil here means it has no value, it's not an error
-			continue
+			return gitem, nil
 		}
 
 		fnm := fv.GetName()
@@ -66,9 +65,9 @@ func resolveReferenceItem(item data.ItemNode, pkg *DataPackage, fields []string,
 			if len(shortval) > 100 {
 				shortval = string(shortval[:99]) + "..."
 			}
-			err = errors.Join(err, fmt.Errorf("couldn't resolve field %v (id: %v) %v (id: %v) Language: %v Field Value: %v (root cause: %v)\n", item.GetName(), item.GetId(), fv.GetName(), fv.GetFieldId(), lang, shortval, err))
-			continue
+			return gitem, fmt.Errorf("couldn't resolve field %v (id: %v) %v (id: %v) Language: %v Field Value: %v (root cause: %v)\n", item.GetName(), item.GetId(), fv.GetName(), fv.GetFieldId(), lang, shortval, err)
 		}
+
 		gfld.Value = result.GetValue()
 		gfld.CData = result.IsHtml()
 

@@ -91,7 +91,7 @@ func ReadAll(connstr string, settings Settings, lang data.Language) (*DataPackag
 	)
 
 	log.Println("loading field values with", len(fields), "fields")
-	fvlist, err := api.LoadFieldValuesTemplates(connstr, fields, templateIds, 20)
+	fvlist, err := api.LoadFieldValuesTemplates(connstr, fields, templateIds, 30)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't load filtered field values. %w", err)
 	}

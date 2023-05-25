@@ -29,10 +29,9 @@ type ExportTemplate struct {
 }
 
 type ExportField struct {
-	Name       string                 `json:"name"`
-	Alias      string                 `json:"alias"`
-	RefField   string                 `json:"refTemplates"`
-	Properties map[string]interface{} `json:"properties"`
+	Name     string `json:"name"`
+	Alias    string `json:"alias"`
+	RefField string `json:"refField"`
 }
 
 func LoadConfig(fn string) (Config, error) {

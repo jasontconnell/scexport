@@ -69,10 +69,9 @@ type DataPackage struct {
 }
 
 type FieldSettings struct {
-	Name       string
-	Alias      string
-	RefField   string
-	Properties map[string]interface{}
+	Name     string
+	Alias    string
+	RefField string
 }
 
 type RefTemplate struct {

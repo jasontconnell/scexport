@@ -40,15 +40,10 @@ func getFieldSettingsMap(list []conf.ExportField) map[string]FieldSettings {
 			key += ":" + fld.Alias
 		}
 
-		pmap := map[string]interface{}{}
-		for k, v := range fld.Properties {
-			pmap[k] = v
-		}
-
 		m[key] = FieldSettings{
-			Name:       fld.Name,
-			Alias:      fld.Alias,
-			Properties: pmap,
+			Name:     fld.Name,
+			Alias:    fld.Alias,
+			RefField: fld.RefField,
 		}
 	}
 	return m
