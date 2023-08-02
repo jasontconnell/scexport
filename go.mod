@@ -16,3 +16,5 @@ require (
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
 )
+
+replace github.com/jasontconnell/sitecore => ../sitecore

@@ -48,7 +48,7 @@ func main() {
 
 	lang := data.Language(settings.FilterLanguage)
 
-	pkg, err := process.ReadAll(cfg.ConnectionString, psettings, lang)
+	pkg, err := process.ReadAll(cfg.ConnectionString, cfg.ProtobufLocation, psettings, lang)
 	if err != nil || pkg == nil {
 		log.Fatal("reading items. ", err)
 	}

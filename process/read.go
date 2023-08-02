@@ -10,7 +10,7 @@ import (
 	"github.com/jasontconnell/sitecore/data"
 )
 
-func ReadAll(connstr string, settings Settings, lang data.Language) (*DataPackage, error) {
+func ReadAll(connstr, protobufLocation string, settings Settings, lang data.Language) (*DataPackage, error) {
 
 	templateIds := []uuid.UUID{}
 	tfm := make(map[uuid.UUID]bool)
@@ -24,11 +24,26 @@ func ReadAll(connstr string, settings Settings, lang data.Language) (*DataPackag
 		templateIds = append(templateIds, tid)
 	}
 
+	var pitems []data.ItemNode
+	if protobufLocation != "" {
+		var perr error
+		pitems, perr = api.ReadProtobuf(protobufLocation)
+		if perr != nil {
+			return nil, fmt.Errorf("can't read protobuf %w", perr)
+		}
+		log.Println("loaded items from protobuf", len(pitems))
+	}
+
 	log.Println("loading items")
 	items, err := api.LoadItemsByTemplates(connstr, templateIds)
 	if err != nil {
 		return nil, fmt.Errorf("loading items %w", err)
 	}
+
+	if pitems != nil {
+		items = append(items, pitems...)
+	}
+
 	log.Println("loaded", len(items), "items")
 	_, m := api.LoadItemMap(items)
 
@@ -79,6 +94,7 @@ func ReadAll(connstr string, settings Settings, lang data.Language) (*DataPackag
 
 	// get file/media fields and create date
 	fields = append(fields,
+		data.DisplayNameFieldId,
 		data.CreateDateFieldId,
 		data.BlobFieldId,
 		data.AltFieldId,

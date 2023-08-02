@@ -11,6 +11,8 @@ import (
 	"github.com/jasontconnell/sitecore/data"
 )
 
+const defaulthandler string = "default"
+
 var mediaReg *regexp.Regexp = regexp.MustCompile(`<image .*?mediaid="\{([A-F0-9\-]+)\}" ?.*?/>`)
 var mediaRteReg *regexp.Regexp = regexp.MustCompile(`src="-\/media\/([a-f0-9]{32})\.ashx`)
 
@@ -26,6 +28,7 @@ var fieldHandlers map[string]FieldHandler
 func init() {
 	fieldHandlers = map[string]FieldHandler{
 		"Single-Line Text":      handleString,
+		"text":                  handleString,
 		"Droplink":              handleReference,
 		"Droptree":              handleReference,
 		"Treelist":              handleReferenceList,
@@ -36,6 +39,7 @@ func init() {
 		"Multi-Line Text":       handleRichText,
 		"Image":                 handleImage,
 		"attachment":            handleAttachment,
+		defaulthandler:          handleString,
 	}
 }
 
@@ -49,8 +53,10 @@ func ResolveField(
 
 	fh, ok := fieldHandlers[tfld.GetType()]
 	if !ok {
-		return handlerResult{}, fmt.Errorf("no handler for %s", tfld.GetType())
+		log.Println("no handler for", tfld.GetType(), ". using default")
+		fh = fieldHandlers[defaulthandler]
 	}
+
 	return fh(fv, item, pkg, fsetting, lang)
 }
 
@@ -95,7 +101,7 @@ func handleRichText(
 		str = strings.ReplaceAll(str, "-/media/"+idval+".ashx", "blobref:"+b.GetId().String())
 	}
 
-	hr.value = str
+	hr.value = formatText(str)
 
 	return hr, nil
 }
