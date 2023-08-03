@@ -22,7 +22,7 @@ func Resolve(pkg *DataPackage, settings Settings, lang data.Language) ([]Group, 
 			group = Group{Name: gkey}
 		}
 
-		item := resolveItem(item, pkg, tsettings, lang)
+		item := resolveItem(item, pkg, tsettings, settings.BlobSettings, lang)
 		for _, b := range item.Blobs {
 			group.Blobs = append(group.Blobs, b)
 		}
@@ -38,14 +38,14 @@ func Resolve(pkg *DataPackage, settings Settings, lang data.Language) ([]Group, 
 	return groups, nil
 }
 
-func resolveReferenceItem(item data.ItemNode, pkg *DataPackage, field string, lang data.Language) (Item, error) {
+func resolveReferenceItem(item data.ItemNode, pkg *DataPackage, field string, bsettings BlobSettings, lang data.Language) (Item, error) {
 	if item == nil {
 		return Item{}, fmt.Errorf("item is nil")
 	}
 	gitem := Item{ID: item.GetId().String(), Name: item.GetName(), Path: item.GetPath(), Fields: []Field{}}
 
 	var err error
-	if field != ItemNameField {
+	if field != ItemNameOutputField {
 		itmp := item.GetTemplate()
 		fld := itmp.FindField(field)
 		if fld == nil {
@@ -59,7 +59,7 @@ func resolveReferenceItem(item data.ItemNode, pkg *DataPackage, field string, la
 
 		fnm := fv.GetName()
 		gfld := Field{Name: fnm}
-		result, err := ResolveField(fv, fld, item, pkg, FieldSettings{}, lang)
+		result, err := ResolveField(fv, fld, item, pkg, FieldSettings{}, bsettings, lang)
 		if err != nil {
 			shortval := fv.GetValue()
 			if len(shortval) > 100 {
@@ -89,7 +89,7 @@ func resolveReferenceItem(item data.ItemNode, pkg *DataPackage, field string, la
 	return gitem, err
 }
 
-func resolveItem(item data.ItemNode, pkg *DataPackage, tsetting TemplateSettings, lang data.Language) Item {
+func resolveItem(item data.ItemNode, pkg *DataPackage, tsetting TemplateSettings, bsettings BlobSettings, lang data.Language) Item {
 	gitem := Item{ID: item.GetId().String(), Name: item.GetName(), Path: item.GetPath(), Fields: []Field{}}
 	for _, fs := range tsetting.Fields {
 		itmp := item.GetTemplate()
@@ -109,7 +109,7 @@ func resolveItem(item data.ItemNode, pkg *DataPackage, tsetting TemplateSettings
 			fnm = fs.Alias
 		}
 		gfld := Field{Name: fnm}
-		result, err := ResolveField(fv, fld, item, pkg, fs, lang)
+		result, err := ResolveField(fv, fld, item, pkg, fs, bsettings, lang)
 		if err != nil {
 			shortval := fv.GetValue()
 			if len(shortval) > 100 {

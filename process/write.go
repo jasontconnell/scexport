@@ -17,7 +17,7 @@ func WriteContent(groups []Group, settings WriteSettings) error {
 	isxml := settings.ContentFormat == "xml"
 	for _, g := range groups {
 		if isxml {
-			path := filepath.Join(fulldir, g.Name+".xml")
+			path := filepath.Join(fulldir, g.Name+"."+settings.ContentFormat)
 			err = writeContentXml(path, g)
 			if err != nil {
 				return fmt.Errorf("writing file contents for %s, path: %s. %w", g.Name, path, err)

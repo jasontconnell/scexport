@@ -21,6 +21,7 @@ type FieldHandler func(
 	item data.ItemNode,
 	pkg *DataPackage,
 	fsetting FieldSettings,
+	bsetting BlobSettings,
 	lang data.Language) (HandlerResult, error)
 
 var fieldHandlers map[string]FieldHandler
@@ -49,15 +50,15 @@ func ResolveField(
 	item data.ItemNode,
 	pkg *DataPackage,
 	fsetting FieldSettings,
+	bsetting BlobSettings,
 	lang data.Language) (HandlerResult, error) {
 
 	fh, ok := fieldHandlers[tfld.GetType()]
 	if !ok {
-		log.Println("no handler for", tfld.GetType(), ". using default")
 		fh = fieldHandlers[defaulthandler]
 	}
 
-	return fh(fv, item, pkg, fsetting, lang)
+	return fh(fv, item, pkg, fsetting, bsetting, lang)
 }
 
 func handleString(
@@ -65,6 +66,7 @@ func handleString(
 	item data.ItemNode,
 	pkg *DataPackage,
 	fsetting FieldSettings,
+	bsetting BlobSettings,
 	lang data.Language) (HandlerResult, error) {
 
 	return handlerResult{value: fv.GetValue()}, nil
@@ -75,6 +77,7 @@ func handleRichText(
 	item data.ItemNode,
 	pkg *DataPackage,
 	fsetting FieldSettings,
+	bsetting BlobSettings,
 	lang data.Language) (HandlerResult, error) {
 
 	str := fv.GetValue()
@@ -92,7 +95,7 @@ func handleRichText(
 			return handlerResult{}, fmt.Errorf("couldn't parse media id in rte field %s %s. %w", fv.GetName(), fv.GetItemId(), err)
 		}
 
-		b, err := extractBlob(id, pkg, lang)
+		b, err := extractBlob(id, pkg, bsetting, lang)
 		if err != nil {
 			return handlerResult{}, fmt.Errorf("handleRichText: extracting blob. item %v. %w", fv.GetItemId(), err)
 		}
@@ -111,6 +114,7 @@ func handleReferenceList(
 	item data.ItemNode,
 	pkg *DataPackage,
 	fsetting FieldSettings,
+	bsetting BlobSettings,
 	lang data.Language) (HandlerResult, error) {
 
 	refval := fv.GetValue()
@@ -138,7 +142,7 @@ func handleReferenceList(
 			continue
 		}
 
-		ref, referr := resolveReferenceItem(refitem, pkg, fsetting.RefField, lang)
+		ref, referr := resolveReferenceItem(refitem, pkg, fsetting.RefField, bsetting, lang)
 		if referr != nil {
 			log.Printf("couldn't get referenced item in list. item %v field %v value %s. skipping\n", item.GetId(), fv.GetName(), id)
 			continue
@@ -157,9 +161,10 @@ func handleReference(
 	item data.ItemNode,
 	pkg *DataPackage,
 	fsetting FieldSettings,
+	bsetting BlobSettings,
 	lang data.Language) (HandlerResult, error) {
 
-	return handleReferenceList(fv, item, pkg, fsetting, lang)
+	return handleReferenceList(fv, item, pkg, fsetting, bsetting, lang)
 }
 
 func handleImage(
@@ -167,6 +172,7 @@ func handleImage(
 	item data.ItemNode,
 	pkg *DataPackage,
 	fsetting FieldSettings,
+	bsetting BlobSettings,
 	lang data.Language) (HandlerResult, error) {
 
 	val := fv.GetValue()
@@ -181,7 +187,7 @@ func handleImage(
 	if err != nil {
 		return handlerResult{}, fmt.Errorf("image field not in expected format %s parsed %s %w", fv.GetValue(), g[1], err)
 	}
-	b, err := extractBlob(id, pkg, lang)
+	b, err := extractBlob(id, pkg, bsetting, lang)
 	if err != nil {
 		return handlerResult{}, fmt.Errorf("handleImage: extracting blob. %w", err)
 	}
@@ -198,6 +204,7 @@ func getRefItemResult(
 	item data.ItemNode,
 	pkg *DataPackage,
 	fsetting FieldSettings,
+	bsetting BlobSettings,
 	lang data.Language) (HandlerResult, error) {
 
 	refitem, ok := pkg.RefItems[id]
@@ -211,7 +218,7 @@ func getRefItemResult(
 		return handlerResult{}, nil
 	}
 
-	if fsetting.RefField != ItemNameField {
+	if fsetting.RefField != ItemNameOutputField {
 		fld := reft.FindField(fsetting.RefField)
 		if fld == nil {
 			return handlerResult{}, fmt.Errorf("couldn't find field %s on template %s %v", fsetting.RefField, reft.GetName(), reft.GetId())
@@ -222,7 +229,7 @@ func getRefItemResult(
 			log.Printf("no value for ref field %s (referencing %s id: %v) on item %s (id: %v)", reft.GetName(), fld.GetName(), fld.GetId(), refitem.GetName(), refitem.GetId())
 			return handlerResult{}, nil
 		}
-		hr, err := ResolveField(reffv, fld, refitem, pkg, fsetting, lang)
+		hr, err := ResolveField(reffv, fld, refitem, pkg, fsetting, bsetting, lang)
 		return hr, err
 	} else {
 		return handlerResult{id: refitem.GetId().String(), path: refitem.GetPath(), value: refitem.GetName()}, nil
@@ -231,7 +238,7 @@ func getRefItemResult(
 
 // image id points to the media library
 // will find out the blob data and return that
-func extractBlob(mediaId uuid.UUID, pkg *DataPackage, lang data.Language) (BlobResult, error) {
+func extractBlob(mediaId uuid.UUID, pkg *DataPackage, bsetting BlobSettings, lang data.Language) (BlobResult, error) {
 	media, ok := pkg.RefItems[mediaId]
 	if !ok {
 		return blobResult{}, fmt.Errorf("referenced blob not found %v", mediaId)
@@ -239,22 +246,25 @@ func extractBlob(mediaId uuid.UUID, pkg *DataPackage, lang data.Language) (BlobR
 
 	blobfld := media.GetTemplate().FindField("Blob")
 	extfld := media.GetTemplate().FindField("Extension")
-	altfld := media.GetTemplate().FindField("Alt")
 
 	if blobfld == nil || extfld == nil {
-		return blobResult{}, fmt.Errorf("blob fields not found. ID: %v Blob: %v  Extension: %v  Alt: %v", mediaId, blobfld == nil, extfld == nil, altfld == nil)
+		return blobResult{}, fmt.Errorf("blob fields not found. ID: %v Blob: %v  Extension: %v", mediaId, blobfld == nil, extfld == nil)
 	}
 
 	blobidfv := media.GetFieldValue(blobfld.GetId(), lang)
 	extfv := media.GetFieldValue(extfld.GetId(), lang)
 
-	alt := ""
-	if altfld != nil {
-		altfv := media.GetFieldValue(altfld.GetId(), lang)
-		if altfv != nil {
-			alt = altfv.GetValue()
+	attrs := []Attr{}
+	for _, cfld := range bsetting.CustomFields {
+		fld := media.GetTemplate().FindField(cfld)
+		if fld != nil {
+			fldval := media.GetFieldValue(fld.GetId(), lang)
+			if fldval != nil {
+				attrs = append(attrs, Attr{Name: cfld, Value: fldval.GetValue()})
+			}
 		}
 	}
+
 	// no actual blob
 	if blobidfv == nil {
 		return blobResult{}, fmt.Errorf("no blob id field value exists on media item %v, field id is %v", mediaId, blobfld.GetId())
@@ -265,8 +275,7 @@ func extractBlob(mediaId uuid.UUID, pkg *DataPackage, lang data.Language) (BlobR
 		return blobResult{}, fmt.Errorf("blob field is invalid format %s %w", blobidfv.GetValue(), err)
 	}
 
-	b := blobResult{blobId: blobId, name: media.GetName(), ext: extfv.GetValue(), path: media.GetPath()}
-	b.attrs = append(b.attrs, Attr{Name: "alt", Value: alt})
+	b := blobResult{blobId: blobId, name: media.GetName(), ext: extfv.GetValue(), path: media.GetPath(), attrs: attrs}
 
 	return b, nil
 }
@@ -276,6 +285,7 @@ func handleAttachment(
 	item data.ItemNode,
 	pkg *DataPackage,
 	fsetting FieldSettings,
+	bsetting BlobSettings,
 	lang data.Language) (HandlerResult, error) {
 
 	val := fv.GetValue()

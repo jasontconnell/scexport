@@ -9,6 +9,7 @@ type BlobData struct {
 	Id       uuid.UUID
 	Data     []byte
 	Filename string
+	Attrs    []Attr
 }
 
 type Group struct {
@@ -51,8 +52,13 @@ type WriteSettings struct {
 }
 
 type Settings struct {
-	Templates  map[uuid.UUID]TemplateSettings
-	References map[uuid.UUID]TemplateSettings
+	Templates    map[uuid.UUID]TemplateSettings
+	References   map[uuid.UUID]TemplateSettings
+	BlobSettings BlobSettings
+}
+
+type BlobSettings struct {
+	CustomFields []string
 }
 
 type TemplateSettings struct {

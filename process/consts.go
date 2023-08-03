@@ -1,6 +1,6 @@
 package process
 
 const (
-	ItemNameField string = ":name"
-	BlobField     string = ":blob"
+	ItemNameOutputField string = ":name"
+	BlobOutputField     string = ":blob"
 )

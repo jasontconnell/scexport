@@ -3,11 +3,23 @@ package process
 import "encoding/xml"
 
 type BlobXml struct {
-	XMLName  xml.Name `xml:"blob"`
-	Id       string   `xml:"id,attr"`
-	Filename string   `xml:"filename,attr"`
-	Length   int      `xml:"length,attr"`
-	Data     string   `xml:",chardata"`
+	XMLName  xml.Name       `xml:"blob"`
+	Id       string         `xml:"id,attr"`
+	Filename string         `xml:"filename,attr"`
+	Length   int            `xml:"length,attr"`
+	Fields   []BlobFieldXml `xml:"fields>field,omitempty"`
+	Data     BlobDataXml    `xml:"data"`
+}
+
+type BlobDataXml struct {
+	XMLName xml.Name `xml:"data"`
+	Data    string   `xml:",cdata"`
+}
+
+type BlobFieldXml struct {
+	XMLName xml.Name `xml:"field"`
+	Name    string   `xml:"name,attr"`
+	Value   string   `xml:"value,attr"`
 }
 
 type ContentsXml struct {

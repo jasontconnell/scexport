@@ -14,10 +14,15 @@ type WriteSettings struct {
 	WriteBlobs      bool   `json:"writeBlobs"`
 }
 
+type BlobSettings struct {
+	CustomFields []string `json:"customFields"`
+}
+
 type ExportSettings struct {
 	FilterLanguage     string           `json:"filterLanguage"`
 	Templates          []ExportTemplate `json:"templates"`
 	ReferenceTemplates []ExportTemplate `json:"referenceTemplates"`
+	BlobSettings       BlobSettings     `json:"blobSettings"`
 	Output             WriteSettings    `json:"output"`
 }
 

@@ -11,7 +11,6 @@ import (
 )
 
 func ReadAll(connstr, protobufLocation string, settings Settings, lang data.Language) (*DataPackage, error) {
-
 	templateIds := []uuid.UUID{}
 	tfm := make(map[uuid.UUID]bool)
 	for tid := range settings.References {
@@ -81,7 +80,7 @@ func ReadAll(connstr, protobufLocation string, settings Settings, lang data.Lang
 		}
 
 		for _, sfld := range stmp.Fields {
-			if sfld.Name == ItemNameField {
+			if sfld.Name == ItemNameOutputField {
 				continue
 			}
 			fld := t.FindField(sfld.Name)

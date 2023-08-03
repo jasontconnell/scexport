@@ -29,7 +29,12 @@ func GetSettings(cfg conf.ExportSettings) (Settings, error) {
 		tsmap[id] = settings
 	}
 
-	return Settings{Templates: tsmap, References: rmap}, nil
+	bsettings := BlobSettings{}
+	for _, c := range cfg.BlobSettings.CustomFields {
+		bsettings.CustomFields = append(bsettings.CustomFields, c)
+	}
+
+	return Settings{Templates: tsmap, References: rmap, BlobSettings: bsettings}, nil
 }
 
 func getFieldSettingsMap(list []conf.ExportField) map[string]FieldSettings {

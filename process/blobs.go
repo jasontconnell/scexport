@@ -44,7 +44,6 @@ func ProcessBlobs(connstr string, groups []Group, ws WriteSettings) {
 }
 
 func readBlobs(connstr string, groups []Group, ws WriteSettings, blobchan chan BlobData, errorchan chan error) {
-
 	dedup := make(map[string]Blob)
 	for _, g := range groups {
 		for _, b := range g.Blobs {
@@ -60,16 +59,16 @@ func readBlobs(connstr string, groups []Group, ws WriteSettings, blobchan chan B
 	}
 
 	for _, b := range dedup {
-		if _, ok := existing[b.Filename]; ok {
-			continue
-		}
+		// if _, ok := existing[b.Filename]; ok {
+		// 	continue
+		// }
 
 		blob, err := api.LoadBlob(connstr, b.Id)
 		if err != nil {
 			errorchan <- fmt.Errorf("couldn't load blob %v %w", b.Id, err)
 		}
 
-		bdata := BlobData{Id: blob.GetId(), Data: blob.GetData(), Filename: b.Filename}
+		bdata := BlobData{Id: blob.GetId(), Data: blob.GetData(), Attrs: b.Attrs, Filename: b.Filename}
 		blobchan <- bdata
 	}
 }
@@ -86,7 +85,11 @@ func writeBlobs(settings WriteSettings, bchan chan BlobData, echan chan error) {
 		case b := <-bchan:
 			log.Println("writing blob xml", b.Filename)
 			if isxml {
-				bxml := BlobXml{Id: b.Id.String(), Filename: b.Filename, Length: len(b.Data), Data: base64.StdEncoding.EncodeToString(b.Data)}
+				bfields := []BlobFieldXml{}
+				for _, f := range b.Attrs {
+					bfields = append(bfields, BlobFieldXml{Name: f.Name, Value: f.Value})
+				}
+				bxml := BlobXml{Id: b.Id.String(), Filename: b.Filename, Length: len(b.Data), Fields: bfields, Data: BlobDataXml{Data: base64.StdEncoding.EncodeToString(b.Data)}}
 				path := filepath.Join(fulldir, bxml.Filename+".xml")
 				err = writeBlobXml(path, bxml)
 				if err != nil {
