@@ -15,15 +15,17 @@ import (
 func ProcessBlobs(connstr string, groups []Group, ws WriteSettings) {
 	bchan := make(chan BlobData, 50000)
 	echan := make(chan error, 50000)
+
+	go errListener(echan)
 	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		readBlobs(connstr, groups, ws, bchan, echan)
+		wg.Done()
+	}()
+	wg.Wait()
 
 	for i := 0; i < 5; i++ {
-		wg.Add(1)
-		go func() {
-			readBlobs(connstr, groups, ws, bchan, echan)
-			wg.Done()
-		}()
-
 		wg.Add(1)
 		go func() {
 			writeBlobs(ws, bchan, echan)
@@ -31,19 +33,19 @@ func ProcessBlobs(connstr string, groups []Group, ws WriteSettings) {
 		}()
 	}
 
-	go func() {
-		for {
-			select {
-			case err := <-echan:
-				log.Println("error occurred in process blobs", err.Error())
-			}
-		}
-	}()
-
 	wg.Wait()
 }
 
-func readBlobs(connstr string, groups []Group, ws WriteSettings, blobchan chan BlobData, errorchan chan error) {
+func errListener(echan chan error) {
+	for {
+		select {
+		case err := <-echan:
+			log.Println("error occurred in process blobs", err.Error())
+		}
+	}
+}
+
+func readBlobs(connstr string, groups []Group, ws WriteSettings, blobchan chan BlobData, echan chan error) {
 	dedup := make(map[string]Blob)
 	for _, g := range groups {
 		for _, b := range g.Blobs {
@@ -65,7 +67,7 @@ func readBlobs(connstr string, groups []Group, ws WriteSettings, blobchan chan B
 
 		blob, err := api.LoadBlob(connstr, b.Id)
 		if err != nil {
-			errorchan <- fmt.Errorf("couldn't load blob %v %w", b.Id, err)
+			echan <- fmt.Errorf("couldn't load blob %v %w", b.Id, err)
 		}
 
 		bdata := BlobData{Id: blob.GetId(), Data: blob.GetData(), Attrs: b.Attrs, Filename: b.Filename}
@@ -80,7 +82,8 @@ func writeBlobs(settings WriteSettings, bchan chan BlobData, echan chan error) {
 		echan <- fmt.Errorf("couldn't create dir structure %s. %w", fulldir, err)
 	}
 	isxml := settings.ContentFormat == "xml"
-	for {
+	done := false
+	for !done {
 		select {
 		case b := <-bchan:
 			log.Println("writing blob xml", b.Filename)
@@ -96,6 +99,8 @@ func writeBlobs(settings WriteSettings, bchan chan BlobData, echan chan error) {
 					echan <- fmt.Errorf("writing file contents for %s, path: %s. %w", b.Filename, path, err)
 				}
 			}
+		default:
+			done = true
 		}
 	}
 }

@@ -8,6 +8,8 @@ import (
 	"github.com/jasontconnell/sitecore/data"
 )
 
+const errorlen int = 150
+
 func Resolve(pkg *DataPackage, settings Settings, lang data.Language) ([]Group, error) {
 	gmap := map[string]Group{}
 	for _, item := range pkg.ReportItems {
@@ -27,6 +29,7 @@ func Resolve(pkg *DataPackage, settings Settings, lang data.Language) ([]Group, 
 			group.Blobs = append(group.Blobs, b)
 		}
 
+		log.Println("got item", item.Name)
 		group.Items = append(group.Items, item)
 		gmap[group.Name] = group
 	}
@@ -47,6 +50,7 @@ func resolveReferenceItem(item data.ItemNode, pkg *DataPackage, field string, bs
 	var err error
 	if field != ItemNameOutputField {
 		itmp := item.GetTemplate()
+
 		fld := itmp.FindField(field)
 		if fld == nil {
 			return gitem, fmt.Errorf("field not in template %s %v item id: %v", field, item.GetTemplateId(), item.GetId())
@@ -62,8 +66,8 @@ func resolveReferenceItem(item data.ItemNode, pkg *DataPackage, field string, bs
 		result, err := ResolveField(fv, fld, item, pkg, FieldSettings{}, bsettings, lang)
 		if err != nil {
 			shortval := fv.GetValue()
-			if len(shortval) > 100 {
-				shortval = string(shortval[:99]) + "..."
+			if len(shortval) > errorlen {
+				shortval = string(shortval[:errorlen-1]) + "..."
 			}
 			return gitem, fmt.Errorf("couldn't resolve field %v (id: %v) %v (id: %v) Language: %v Field Value: %v (root cause: %v)\n", item.GetName(), item.GetId(), fv.GetName(), fv.GetFieldId(), lang, shortval, err)
 		}
@@ -93,6 +97,8 @@ func resolveItem(item data.ItemNode, pkg *DataPackage, tsetting TemplateSettings
 	gitem := Item{ID: item.GetId().String(), Name: item.GetName(), Path: item.GetPath(), Fields: []Field{}}
 	for _, fs := range tsetting.Fields {
 		itmp := item.GetTemplate()
+		stdval := itmp.GetStandardValues()
+
 		fld := itmp.FindField(fs.Name)
 		if fld == nil {
 			continue
@@ -100,8 +106,14 @@ func resolveItem(item data.ItemNode, pkg *DataPackage, tsetting TemplateSettings
 
 		fv := item.GetFieldValue(fld.GetId(), lang)
 		if fv == nil {
+			if stdval != nil {
+				fv = stdval.GetFieldValue(fld.GetId(), lang)
+			}
+
 			// nil here means it has no value, it's not an error
-			continue
+			if fv == nil {
+				continue
+			}
 		}
 
 		fnm := fv.GetName()
@@ -112,8 +124,8 @@ func resolveItem(item data.ItemNode, pkg *DataPackage, tsetting TemplateSettings
 		result, err := ResolveField(fv, fld, item, pkg, fs, bsettings, lang)
 		if err != nil {
 			shortval := fv.GetValue()
-			if len(shortval) > 100 {
-				shortval = string(shortval[:99]) + "..."
+			if len(shortval) > errorlen {
+				shortval = string(shortval[:errorlen-1]) + "..."
 			}
 			log.Printf("couldn't resolve field %v (id: %v) %v (id: %v) Language: %v Field Value: %v (root cause: %v)\n", item.GetName(), item.GetId(), fv.GetName(), fv.GetFieldId(), lang, shortval, err)
 			continue

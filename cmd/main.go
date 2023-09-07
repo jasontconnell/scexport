@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -21,7 +21,7 @@ func main() {
 	flag.Parse()
 
 	if *q {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 	}
 
 	if *out != "" {

@@ -54,6 +54,7 @@ func ReadAll(connstr, protobufLocation string, settings Settings, lang data.Lang
 	log.Println("loaded", len(tlist), "templates")
 
 	tm := api.GetTemplateMap(tlist)
+	api.SetStandardValues(m, tm)
 	api.SetTemplates(m, tm)
 
 	log.Println("template filter map contains", len(tfm))

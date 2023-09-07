@@ -3,6 +3,7 @@ package process
 import (
 	"encoding/xml"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -16,6 +17,7 @@ func WriteContent(groups []Group, settings WriteSettings) error {
 
 	isxml := settings.ContentFormat == "xml"
 	for _, g := range groups {
+		log.Println("writing", len(g.Items), g.Name, len(g.Blobs), "blobs")
 		if isxml {
 			path := filepath.Join(fulldir, g.Name+"."+settings.ContentFormat)
 			err = writeContentXml(path, g)
