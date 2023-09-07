@@ -36,7 +36,6 @@ func Resolve(pkg *DataPackage, settings Settings, lang data.Language) ([]Group, 
 	groups := []Group{}
 	for _, g := range gmap {
 		groups = append(groups, g)
-		log.Println("adding group", g.Name, "with item count:", len(g.Items), "and blob count:", len(g.Blobs))
 	}
 	return groups, nil
 }
@@ -104,8 +103,6 @@ func resolveItem(item data.ItemNode, pkg *DataPackage, tsetting TemplateSettings
 			continue
 		}
 
-		log.Println(fs.Name)
-
 		fv := item.GetFieldValue(fld.GetId(), lang)
 		if fv == nil {
 			if stdval != nil {
@@ -147,7 +144,6 @@ func resolveItem(item data.ItemNode, pkg *DataPackage, tsetting TemplateSettings
 			gfld.Refs = append(gfld.Refs, ref)
 		}
 
-		log.Println(gfld.Name, gfld.Value)
 		gitem.Fields = append(gitem.Fields, gfld)
 	}
 
