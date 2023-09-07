@@ -58,7 +58,7 @@ type Settings struct {
 }
 
 type BlobSettings struct {
-	CustomFields []string
+	CustomFields []uuid.UUID
 }
 
 type TemplateSettings struct {

@@ -104,7 +104,13 @@ func ReadAll(connstr, protobufLocation string, settings Settings, lang data.Lang
 		data.VersionedAltFieldId,
 		data.VersionedExtensionFieldId,
 		data.VersionedMimeTypeFieldId,
+		data.DescriptionFieldId,
+		data.VersionedDescriptionFieldId,
 	)
+
+	for _, fid := range settings.BlobSettings.CustomFields {
+		fields = append(fields, fid)
+	}
 
 	log.Println("loading field values with", len(fields), "fields")
 	fvlist, err := api.LoadFieldValuesTemplates(connstr, fields, templateIds, 30)

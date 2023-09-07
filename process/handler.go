@@ -256,11 +256,11 @@ func extractBlob(mediaId uuid.UUID, pkg *DataPackage, bsetting BlobSettings, lan
 
 	attrs := []Attr{}
 	for _, cfld := range bsetting.CustomFields {
-		fld := media.GetTemplate().FindField(cfld)
+		fld := media.GetTemplate().GetField(cfld)
 		if fld != nil {
 			fldval := media.GetFieldValue(fld.GetId(), lang)
 			if fldval != nil {
-				attrs = append(attrs, Attr{Name: cfld, Value: fldval.GetValue()})
+				attrs = append(attrs, Attr{Name: fld.GetName(), Value: fldval.GetValue()})
 			}
 		}
 	}

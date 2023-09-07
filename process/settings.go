@@ -1,6 +1,8 @@
 package process
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/jasontconnell/scexport/conf"
 	"github.com/jasontconnell/sitecore/api"
@@ -31,7 +33,11 @@ func GetSettings(cfg conf.ExportSettings) (Settings, error) {
 
 	bsettings := BlobSettings{}
 	for _, c := range cfg.BlobSettings.CustomFields {
-		bsettings.CustomFields = append(bsettings.CustomFields, c)
+		uid, err := uuid.Parse(c)
+		if err != nil {
+			return Settings{}, fmt.Errorf("couldn't parse uuid %s. %w", c, err)
+		}
+		bsettings.CustomFields = append(bsettings.CustomFields, uid)
 	}
 
 	return Settings{Templates: tsmap, References: rmap, BlobSettings: bsettings}, nil
