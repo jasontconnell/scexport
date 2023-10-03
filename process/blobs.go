@@ -18,13 +18,41 @@ func ProcessBlobs(connstr string, groups []Group, ws WriteSettings) {
 
 	go errListener(echan)
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		readBlobs(connstr, groups, ws, bchan, echan)
-		wg.Done()
-	}()
-	wg.Wait()
 
+	allblobs := []Blob{}
+	dedup := make(map[string]bool)
+	for _, g := range groups {
+		for _, b := range g.Blobs {
+			if _, ok := dedup[b.Filename]; ok {
+				continue
+			}
+			allblobs = append(allblobs, b)
+			dedup[b.Filename] = true
+		}
+	}
+
+	log.Println("reading", len(allblobs), "blobs")
+	if len(allblobs) > 100 {
+		size := len(allblobs) / 5
+		for i := 0; i < 5; i++ {
+			wg.Add(1)
+			go func(s, idx int) {
+				start := s * idx
+				end := idx*s + s
+				if end >= len(allblobs) {
+					end = len(allblobs) - 1
+				}
+				batch := allblobs[start:end]
+				readBlobs(connstr, batch, ws, bchan, echan)
+				wg.Done()
+			}(size, i)
+		}
+		wg.Wait()
+	} else {
+		readBlobs(connstr, allblobs, ws, bchan, echan)
+	}
+
+	log.Println("writing", len(allblobs), "blobs")
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
 		go func() {
@@ -45,14 +73,7 @@ func errListener(echan chan error) {
 	}
 }
 
-func readBlobs(connstr string, groups []Group, ws WriteSettings, blobchan chan BlobData, echan chan error) {
-	dedup := make(map[string]Blob)
-	for _, g := range groups {
-		for _, b := range g.Blobs {
-			dedup[b.Filename] = b
-		}
-	}
-
+func readBlobs(connstr string, blobs []Blob, ws WriteSettings, blobchan chan BlobData, echan chan error) {
 	existing := make(map[string]bool)
 	files, _ := os.ReadDir(ws.BlobLocation)
 	for _, f := range files {
@@ -60,7 +81,7 @@ func readBlobs(connstr string, groups []Group, ws WriteSettings, blobchan chan B
 		existing[nm] = true
 	}
 
-	for _, b := range dedup {
+	for _, b := range blobs {
 		// if _, ok := existing[b.Filename]; ok {
 		// 	continue
 		// }

@@ -13,7 +13,7 @@ import (
 
 const defaulthandler string = "default"
 
-var mediaReg *regexp.Regexp = regexp.MustCompile(`<image .*?mediaid="\{([A-F0-9\-]+)\}" ?.*?/>`)
+var mediaReg *regexp.Regexp = regexp.MustCompile(`<(image|file) .*?mediaid="\{([A-F0-9\-]+)\}" ?.*?/>`)
 var mediaRteReg *regexp.Regexp = regexp.MustCompile(`src="-\/media\/([a-f0-9]{32})\.ashx`)
 
 type FieldHandler func(
@@ -38,7 +38,8 @@ func init() {
 		"Datetime":              handleString,
 		"Rich Text":             handleRichText,
 		"Multi-Line Text":       handleRichText,
-		"Image":                 handleImage,
+		"Image":                 handleMedia,
+		"File":                  handleMedia,
 		"attachment":            handleAttachment,
 		defaulthandler:          handleString,
 	}
@@ -167,7 +168,7 @@ func handleReference(
 	return handleReferenceList(fv, item, pkg, fsetting, bsetting, lang)
 }
 
-func handleImage(
+func handleMedia(
 	fv data.FieldValueNode,
 	item data.ItemNode,
 	pkg *DataPackage,
