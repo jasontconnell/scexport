@@ -13,7 +13,7 @@ import (
 
 const defaulthandler string = "default"
 
-var mediaReg *regexp.Regexp = regexp.MustCompile(`<(image|file) .*?mediaid="\{([A-F0-9\-]+)\}" ?.*?/>`)
+var mediaReg *regexp.Regexp = regexp.MustCompile(`<(?:image|file) .*?mediaid="\{([A-F0-9\-]+)\}" ?.*?/>`)
 var mediaRteReg *regexp.Regexp = regexp.MustCompile(`src="-\/media\/([a-f0-9]{32})\.ashx`)
 
 type FieldHandler func(
