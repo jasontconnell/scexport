@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 
 	"github.com/jasontconnell/sitecore/data"
 )
@@ -47,7 +48,7 @@ func resolveReferenceItem(item data.ItemNode, pkg *DataPackage, field string, bs
 	gitem := Item{ID: item.GetId().String(), Name: item.GetName(), Path: item.GetPath(), Fields: []Field{}}
 
 	var err error
-	if field != ItemNameOutputField {
+	if !strings.HasPrefix(field, ":") {
 		itmp := item.GetTemplate()
 
 		fld := itmp.FindField(field)
@@ -75,7 +76,7 @@ func resolveReferenceItem(item data.ItemNode, pkg *DataPackage, field string, bs
 		gfld.CData = result.IsHtml()
 
 		for _, blob := range result.GetBlobs() {
-			b := Blob{Id: blob.GetId(), Filename: blob.GetName() + "." + blob.GetExt(), Path: blob.GetPath()}
+			b := Blob{ItemId: blob.GetItemId(), BlobId: blob.GetBlobId(), Filename: blob.GetName() + "." + blob.GetExt(), Path: blob.GetPath()}
 			for _, attr := range blob.GetAttrs() {
 				b.Attrs = append(b.Attrs, Attr{Name: attr.Name, Value: attr.Value})
 			}
@@ -133,7 +134,7 @@ func resolveItem(item data.ItemNode, pkg *DataPackage, tsetting TemplateSettings
 		gfld.CData = result.IsHtml()
 
 		for _, blob := range result.GetBlobs() {
-			b := Blob{Id: blob.GetId(), Filename: blob.GetName() + "." + blob.GetExt(), Path: blob.GetPath()}
+			b := Blob{ItemId: blob.GetItemId(), BlobId: blob.GetBlobId(), Filename: blob.GetName() + "." + blob.GetExt(), Path: blob.GetPath()}
 			for _, attr := range blob.GetAttrs() {
 				b.Attrs = append(b.Attrs, Attr{Name: attr.Name, Value: attr.Value})
 			}

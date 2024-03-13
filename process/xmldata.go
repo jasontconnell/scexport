@@ -4,7 +4,8 @@ import "encoding/xml"
 
 type BlobXml struct {
 	XMLName  xml.Name       `xml:"blob"`
-	Id       string         `xml:"id,attr"`
+	ItemId   string         `xml:"id,attr"`
+	BlobId   string         `xml:"blobId,attr"`
 	Filename string         `xml:"filename,attr"`
 	Length   int            `xml:"length,attr"`
 	Fields   []BlobFieldXml `xml:"fields>field,omitempty"`
@@ -47,7 +48,8 @@ type ContentField struct {
 
 type BlobRef struct {
 	XMLName  xml.Name `xml:"blob"`
-	Id       string   `xml:"id,attr"`
+	ItemId   string   `xml:"itemid,attr"`
+	BlobId   string   `xml:"blobid,attr"`
 	Filename string   `xml:"filename,attr"`
 	Path     string   `xml:"path,attr"`
 }

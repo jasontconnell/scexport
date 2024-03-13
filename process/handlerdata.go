@@ -3,7 +3,8 @@ package process
 import "github.com/google/uuid"
 
 type BlobResult interface {
-	GetId() uuid.UUID
+	GetBlobId() uuid.UUID
+	GetItemId() uuid.UUID
 	GetName() string
 	GetAttrs() []Attr
 	GetExt() string
@@ -22,6 +23,7 @@ type HandlerResult interface {
 
 type blobResult struct {
 	blobId uuid.UUID
+	itemId uuid.UUID
 	name   string
 	attrs  []Attr
 	ext    string
@@ -65,8 +67,12 @@ func (h handlerResult) GetReferences() []Item {
 	return h.refs
 }
 
-func (b blobResult) GetId() uuid.UUID {
+func (b blobResult) GetBlobId() uuid.UUID {
 	return b.blobId
+}
+
+func (b blobResult) GetItemId() uuid.UUID {
+	return b.itemId
 }
 
 func (b blobResult) GetName() string {

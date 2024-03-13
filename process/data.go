@@ -6,7 +6,8 @@ import (
 )
 
 type BlobData struct {
-	Id       uuid.UUID
+	BlobId   uuid.UUID
+	ItemId   uuid.UUID
 	Data     []byte
 	Filename string
 	Attrs    []Attr
@@ -34,7 +35,8 @@ type Field struct {
 }
 
 type Blob struct {
-	Id       uuid.UUID
+	BlobId   uuid.UUID
+	ItemId   uuid.UUID
 	Filename string
 	Attrs    []Attr
 	Path     string

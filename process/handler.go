@@ -102,7 +102,7 @@ func handleRichText(
 		}
 		hr.blobs = append(hr.blobs, b)
 
-		str = strings.ReplaceAll(str, "-/media/"+idval+".ashx", "blobref:"+b.GetId().String())
+		str = strings.ReplaceAll(str, "-/media/"+idval+".ashx", "blobref:"+b.GetItemId().String())
 	}
 
 	hr.value = formatText(str)
@@ -193,7 +193,7 @@ func handleMedia(
 		return handlerResult{}, fmt.Errorf("handleImage: extracting blob. %w", err)
 	}
 
-	hr := handlerResult{id: b.GetId().String(), path: b.GetPath(), value: "blobref:" + b.GetId().String()}
+	hr := handlerResult{id: id.String(), path: b.GetPath(), value: "blobref:" + id.String()}
 	hr.blobs = append(hr.blobs, b)
 
 	return hr, nil
@@ -219,7 +219,7 @@ func getRefItemResult(
 		return handlerResult{}, nil
 	}
 
-	if fsetting.RefField != ItemNameOutputField {
+	if !strings.HasPrefix(fsetting.RefField, ":") {
 		fld := reft.FindField(fsetting.RefField)
 		if fld == nil {
 			return handlerResult{}, fmt.Errorf("couldn't find field %s on template %s %v", fsetting.RefField, reft.GetName(), reft.GetId())
@@ -233,7 +233,14 @@ func getRefItemResult(
 		hr, err := ResolveField(reffv, fld, refitem, pkg, fsetting, bsetting, lang)
 		return hr, err
 	} else {
-		return handlerResult{id: refitem.GetId().String(), path: refitem.GetPath(), value: refitem.GetName()}, nil
+		val := refitem.GetName()
+		switch fsetting.RefField {
+		case ":path":
+			val = refitem.GetPath()
+		case ":id":
+			val = refitem.GetId().String()
+		}
+		return handlerResult{id: refitem.GetId().String(), path: refitem.GetPath(), value: val}, nil
 	}
 }
 
@@ -276,7 +283,7 @@ func extractBlob(mediaId uuid.UUID, pkg *DataPackage, bsetting BlobSettings, lan
 		return blobResult{}, fmt.Errorf("blob field is invalid format %s %w", blobidfv.GetValue(), err)
 	}
 
-	b := blobResult{blobId: blobId, name: media.GetName(), ext: extfv.GetValue(), path: media.GetPath(), attrs: attrs}
+	b := blobResult{blobId: blobId, itemId: mediaId, name: media.GetName(), ext: extfv.GetValue(), path: media.GetPath(), attrs: attrs}
 
 	return b, nil
 }

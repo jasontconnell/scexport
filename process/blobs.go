@@ -86,12 +86,12 @@ func readBlobs(connstr string, blobs []Blob, ws WriteSettings, blobchan chan Blo
 		// 	continue
 		// }
 
-		blob, err := api.LoadBlob(connstr, b.Id)
+		blob, err := api.LoadBlob(connstr, b.BlobId)
 		if err != nil {
-			echan <- fmt.Errorf("couldn't load blob %v %w", b.Id, err)
+			echan <- fmt.Errorf("couldn't load blob %v %w", b.BlobId, err)
 		}
 
-		bdata := BlobData{Id: blob.GetId(), Data: blob.GetData(), Attrs: b.Attrs, Filename: b.Filename}
+		bdata := BlobData{ItemId: b.ItemId, BlobId: b.BlobId, Data: blob.GetData(), Attrs: b.Attrs, Filename: b.Filename}
 		blobchan <- bdata
 	}
 }
@@ -113,7 +113,7 @@ func writeBlobs(settings WriteSettings, bchan chan BlobData, echan chan error) {
 				for _, f := range b.Attrs {
 					bfields = append(bfields, BlobFieldXml{Name: f.Name, Value: f.Value})
 				}
-				bxml := BlobXml{Id: b.Id.String(), Filename: b.Filename, Length: len(b.Data), Fields: bfields, Data: BlobDataXml{Data: base64.StdEncoding.EncodeToString(b.Data)}}
+				bxml := BlobXml{ItemId: b.ItemId.String(), BlobId: b.BlobId.String(), Filename: b.Filename, Length: len(b.Data), Fields: bfields, Data: BlobDataXml{Data: base64.StdEncoding.EncodeToString(b.Data)}}
 				path := filepath.Join(fulldir, bxml.Filename+".xml")
 				err = writeBlobXml(path, bxml)
 				if err != nil {

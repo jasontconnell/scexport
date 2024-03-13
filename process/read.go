@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jasontconnell/sitecore/api"
@@ -81,7 +82,7 @@ func ReadAll(connstr, protobufLocation string, settings Settings, lang data.Lang
 		}
 
 		for _, sfld := range stmp.Fields {
-			if sfld.Name == ItemNameOutputField {
+			if strings.HasPrefix(sfld.Name, ":") {
 				continue
 			}
 			fld := t.FindField(sfld.Name)

@@ -80,7 +80,7 @@ func writeContentXml(fullpath string, g Group) error {
 
 		var bloblist []BlobRef
 		for _, b := range item.Blobs {
-			bref := BlobRef{Id: b.Id.String(), Filename: b.Filename, Path: b.Path}
+			bref := BlobRef{ItemId: b.ItemId.String(), BlobId: b.BlobId.String(), Filename: b.Filename, Path: b.Path}
 			bloblist = append(bloblist, bref)
 		}
 		if len(bloblist) > 0 {
