@@ -18,6 +18,7 @@ func main() {
 	es := flag.String("settings", "", "export settings file")
 	q := flag.Bool("q", false, "quiet mode")
 	out := flag.String("output", "", "log output to filename")
+	blobs := flag.Bool("blobs", false, "process blobs")
 	flag.Parse()
 
 	if *q {
@@ -62,7 +63,7 @@ func main() {
 		ContentFormat:   settings.Output.ContentFormat,
 		ContentLocation: settings.Output.ContentLocation,
 		BlobLocation:    settings.Output.BlobLocation,
-		WriteBlobs:      settings.Output.WriteBlobs,
+		WriteBlobs:      *blobs,
 	}
 
 	if ws.WriteBlobs {
