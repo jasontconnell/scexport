@@ -7,6 +7,7 @@ type BlobXml struct {
 	ItemId   string         `xml:"id,attr"`
 	BlobId   string         `xml:"blobId,attr"`
 	Filename string         `xml:"filename,attr"`
+	Path     string         `xml:"path,attr"`
 	Length   int            `xml:"length,attr"`
 	Fields   []BlobFieldXml `xml:"fields>field,omitempty"`
 	Data     BlobDataXml    `xml:"data"`

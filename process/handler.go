@@ -13,7 +13,7 @@ import (
 
 const defaulthandler string = "default"
 
-var mediaReg *regexp.Regexp = regexp.MustCompile(`<(?:image|file) .*?mediaid="\{([A-F0-9\-]+)\}" ?.*?/>`)
+var mediaReg *regexp.Regexp = regexp.MustCompile(`<(?:image|file) .*?mediaid="\{([A-Fa-f0-9\-]+)\}" ?.*?/>`)
 var mediaRteReg *regexp.Regexp = regexp.MustCompile(`src="-\/media\/([a-f0-9]{32})\.ashx`)
 
 type FieldHandler func(
@@ -197,51 +197,6 @@ func handleMedia(
 	hr.blobs = append(hr.blobs, b)
 
 	return hr, nil
-}
-
-func getRefItemResult(
-	id uuid.UUID,
-	fv data.FieldValueNode,
-	item data.ItemNode,
-	pkg *DataPackage,
-	fsetting FieldSettings,
-	bsetting BlobSettings,
-	lang data.Language) (HandlerResult, error) {
-
-	refitem, ok := pkg.RefItems[id]
-	if !ok {
-		return handlerResult{}, fmt.Errorf("reference not found in map %v. referenced by item %v", id, item.GetId())
-	}
-
-	reft := refitem.GetTemplate()
-	if reft == nil {
-		log.Println("reference template null", refitem.GetTemplateId(), refitem.GetId())
-		return handlerResult{}, nil
-	}
-
-	if !strings.HasPrefix(fsetting.RefField, ":") {
-		fld := reft.FindField(fsetting.RefField)
-		if fld == nil {
-			return handlerResult{}, fmt.Errorf("couldn't find field %s on template %s %v", fsetting.RefField, reft.GetName(), reft.GetId())
-		}
-
-		reffv := refitem.GetFieldValue(fld.GetId(), lang)
-		if reffv == nil {
-			log.Printf("no value for ref field %s (referencing %s id: %v) on item %s (id: %v)", reft.GetName(), fld.GetName(), fld.GetId(), refitem.GetName(), refitem.GetId())
-			return handlerResult{}, nil
-		}
-		hr, err := ResolveField(reffv, fld, refitem, pkg, fsetting, bsetting, lang)
-		return hr, err
-	} else {
-		val := refitem.GetName()
-		switch fsetting.RefField {
-		case ":path":
-			val = refitem.GetPath()
-		case ":id":
-			val = refitem.GetId().String()
-		}
-		return handlerResult{id: refitem.GetId().String(), path: refitem.GetPath(), value: val}, nil
-	}
 }
 
 // image id points to the media library

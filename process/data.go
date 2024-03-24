@@ -10,6 +10,7 @@ type BlobData struct {
 	ItemId   uuid.UUID
 	Data     []byte
 	Filename string
+	Path     string
 	Attrs    []Attr
 }
 
