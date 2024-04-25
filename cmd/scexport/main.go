@@ -19,6 +19,7 @@ func main() {
 	q := flag.Bool("q", false, "quiet mode")
 	out := flag.String("output", "", "log output to filename")
 	blobs := flag.Bool("blobs", false, "process blobs")
+	flast := flag.Bool("lastmod", false, "track with lastmod")
 	flag.Parse()
 
 	if *q {
@@ -37,6 +38,7 @@ func main() {
 	if err != nil {
 		log.Fatal("couldn't load config. ", err)
 	}
+
 	settings, err := conf.LoadExportSettings(*es)
 	if err != nil {
 		log.Fatal("couldn't load export settings. ", err)
@@ -47,9 +49,14 @@ func main() {
 		log.Fatal("problem with settings. ", err)
 	}
 
+	var since time.Time = process.DefaultModTime
+	if *flast {
+		since = process.ReadLastMod(*es)
+	}
+
 	lang := data.Language(settings.FilterLanguage)
 
-	pkg, err := process.ReadAll(cfg.ConnectionString, cfg.ProtobufLocation, psettings, lang)
+	pkg, err := process.ReadAll(cfg.ConnectionString, cfg.ProtobufLocation, psettings, lang, since)
 	if err != nil || pkg == nil {
 		log.Fatal("reading items. ", err)
 	}
@@ -73,6 +80,10 @@ func main() {
 	err = process.WriteContent(groups, ws)
 	if err != nil {
 		log.Fatal("writing contents. ", err)
+	}
+
+	if *flast {
+		process.WriteLastMod(*es)
 	}
 
 	log.Println("Time:", time.Since(start))

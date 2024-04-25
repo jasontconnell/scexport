@@ -270,7 +270,7 @@ func handleAttachment(
 		ext = extfv.GetValue()
 	}
 
-	b := blobResult{blobId: blobId, name: item.GetName(), ext: ext, path: item.GetPath()}
+	b := blobResult{itemId: item.GetId(), blobId: blobId, name: item.GetName(), ext: ext, path: item.GetPath()}
 
 	hr := handlerResult{value: "blobref:" + b.blobId.String()}
 	hr.blobs = append(hr.blobs, b)

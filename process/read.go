@@ -5,13 +5,14 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jasontconnell/sitecore/api"
 	"github.com/jasontconnell/sitecore/data"
 )
 
-func ReadAll(connstr, protobufLocation string, settings Settings, lang data.Language) (*DataPackage, error) {
+func ReadAll(connstr, protobufLocation string, settings Settings, lang data.Language, since time.Time) (*DataPackage, error) {
 	templateIds := []uuid.UUID{}
 	tfm := make(map[uuid.UUID]bool)
 	for tid := range settings.References {
@@ -97,16 +98,28 @@ func ReadAll(connstr, protobufLocation string, settings Settings, lang data.Lang
 	fields = append(fields,
 		data.DisplayNameFieldId,
 		data.CreateDateFieldId,
+
 		data.BlobFieldId,
 		data.AltFieldId,
 		data.ExtensionFieldId,
+		data.DescriptionFieldId,
 		data.MimeTypeFieldId,
+		data.HeightFieldId,
+		data.WidthFieldId,
+		data.CopyrightFieldId,
+		data.KeywordsFieldId,
+		data.TitleFieldId,
+
 		data.VersionedBlobFieldId,
 		data.VersionedAltFieldId,
 		data.VersionedExtensionFieldId,
-		data.VersionedMimeTypeFieldId,
-		data.DescriptionFieldId,
 		data.VersionedDescriptionFieldId,
+		data.VersionedMimeTypeFieldId,
+		data.VersionedHeightFieldId,
+		data.VersionedWidthFieldId,
+		data.VersionedCopyrightFieldId,
+		data.VersionedKeywordsFieldId,
+		data.VersionedTitleFieldId,
 	)
 
 	for _, fid := range settings.BlobSettings.CustomFields {
@@ -129,6 +142,23 @@ func ReadAll(connstr, protobufLocation string, settings Settings, lang data.Lang
 	log.Println("filtering references, current item count is", len(m))
 	filteredRefs := filterMap(m, settings.References)
 	log.Println("filtered references map, new item count is", len(filteredRefs))
+
+	if since.After(DefaultModTime) {
+		log.Println("filtering for items created or updated after", since)
+		filteredItems = api.FilterItemMapCustom(filteredItems, func(i data.ItemNode) bool {
+			itemAfter := i.GetCreated().After(since) || i.GetUpdated().After(since)
+			if !itemAfter {
+				fieldAfter := false
+				for _, fv := range i.GetFieldValues() {
+					fieldAfter = fieldAfter || (fv.GetCreated().After(since) || fv.GetUpdated().After(since))
+				}
+				itemAfter = fieldAfter
+			}
+
+			return itemAfter
+		})
+		log.Println("loaded", len(filteredItems), "items after", since)
+	}
 
 	reportItems := []data.ItemNode{}
 	for _, item := range filteredItems {

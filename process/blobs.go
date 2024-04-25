@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,13 +13,9 @@ import (
 	"github.com/jasontconnell/sitecore/api"
 )
 
+const parallelprocesses int = 8
+
 func ProcessBlobs(connstr string, groups []Group, ws WriteSettings) {
-	bchan := make(chan BlobData, 50000)
-	echan := make(chan error, 50000)
-
-	go errListener(echan)
-	var wg sync.WaitGroup
-
 	allblobs := []Blob{}
 	dedup := make(map[string]bool)
 	for _, g := range groups {
@@ -31,10 +28,24 @@ func ProcessBlobs(connstr string, groups []Group, ws WriteSettings) {
 		}
 	}
 
+	if len(allblobs) == 0 {
+		log.Println("no blobs to process")
+		return
+	}
+
+	bchan := make(chan BlobData, 50000)
+	echan := make(chan error, 50000)
+
+	go errListener(echan)
+	var wg sync.WaitGroup
+
 	log.Println("reading", len(allblobs), "blobs")
 	if len(allblobs) > 100 {
-		size := len(allblobs) / 5
-		for i := 0; i < 5; i++ {
+		size := len(allblobs) / parallelprocesses
+		batches := int(math.Ceil(float64(len(allblobs)) / float64(size)))
+
+		log.Println("processing", batches, "batches of", size, "blobs each")
+		for i := 0; i < batches; i++ {
 			wg.Add(1)
 			go func(s, idx int) {
 				start := s * idx
@@ -52,8 +63,8 @@ func ProcessBlobs(connstr string, groups []Group, ws WriteSettings) {
 		readBlobs(connstr, allblobs, ws, bchan, echan)
 	}
 
-	log.Println("writing", len(allblobs), "blobs")
-	for i := 0; i < 5; i++ {
+	log.Println("writing", len(bchan), "blobs")
+	for i := 0; i < parallelprocesses; i++ {
 		wg.Add(1)
 		go func() {
 			writeBlobs(ws, bchan, echan)
