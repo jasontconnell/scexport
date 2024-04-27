@@ -15,6 +15,7 @@ const defaulthandler string = "default"
 
 var mediaReg *regexp.Regexp = regexp.MustCompile(`<(?:image|file) .*?mediaid="\{([A-Fa-f0-9\-]+)\}" ?.*?/>`)
 var mediaRteReg *regexp.Regexp = regexp.MustCompile(`src="-\/media\/([a-f0-9]{32})\.ashx`)
+var linkMediaReg *regexp.Regexp = regexp.MustCompile(`<link .*?linktype="media" .*?id="\{([A-Fa-f0-9\-]+)\}" ?.*?/>`)
 
 type FieldHandler func(
 	fv data.FieldValueNode,
@@ -41,6 +42,7 @@ func init() {
 		"Image":                 handleMedia,
 		"File":                  handleMedia,
 		"attachment":            handleAttachment,
+		"General Link":          handleLink,
 		defaulthandler:          handleString,
 	}
 }
@@ -106,6 +108,44 @@ func handleRichText(
 	}
 
 	hr.value = formatText(str)
+
+	return hr, nil
+}
+
+func handleLink(
+	fv data.FieldValueNode,
+	item data.ItemNode,
+	pkg *DataPackage,
+	fsetting FieldSettings,
+	bsetting BlobSettings,
+	lang data.Language) (HandlerResult, error) {
+
+	val := fv.GetValue()
+	if val == "" {
+		return handlerResult{}, nil
+	}
+	g := linkMediaReg.FindStringSubmatch(val)
+
+	if len(g) != 2 {
+		return handleString(fv, item, pkg, fsetting, bsetting, lang)
+	}
+
+	imageId, err := uuid.Parse(g[1])
+	if err != nil {
+		log.Printf("couldn't parse uuid in general link %v field %s value %s. skipping\n", item.GetId(), fv.GetName(), g[1])
+		return handlerResult{}, err
+	}
+
+	blob, err := extractBlob(imageId, pkg, bsetting, lang)
+	if err != nil {
+		log.Printf("couldn't extract blob in general link %v field %s value %v. skipping\n", item.GetId(), fv.GetName(), imageId)
+		return handlerResult{}, err
+	}
+
+	newval := strings.Replace(val, g[1], "blobref:"+imageId.String(), 1)
+
+	hr := handlerResult{value: newval}
+	hr.blobs = append(hr.blobs, blob)
 
 	return hr, nil
 }
