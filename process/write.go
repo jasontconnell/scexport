@@ -40,12 +40,6 @@ func writeBlobXml(fullpath string, b BlobXml) error {
 }
 
 func writeContentXml(fullpath string, g Group) error {
-	f, err := os.OpenFile(fullpath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("opening file for write %s. %w", fullpath, err)
-	}
-	defer f.Close()
-
 	items := []ContentItem{}
 	for _, item := range g.Items {
 		x := ContentItem{ID: item.ID, TypeName: g.Name, Name: item.Name, Path: item.Path}
@@ -89,6 +83,12 @@ func writeContentXml(fullpath string, g Group) error {
 
 		items = append(items, x)
 	}
+
+	f, err := os.OpenFile(fullpath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("opening file for write %s. %w", fullpath, err)
+	}
+	defer f.Close()
 
 	enc := xml.NewEncoder(f)
 	enc.Indent(" ", " ")

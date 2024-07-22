@@ -13,7 +13,7 @@ import (
 	"github.com/jasontconnell/sitecore/api"
 )
 
-const parallelprocesses int = 8
+const parallelWriteProcesses int = 8
 
 func ProcessBlobs(connstr string, groups []Group, ws WriteSettings) {
 	allblobs := []Blob{}
@@ -41,12 +41,13 @@ func ProcessBlobs(connstr string, groups []Group, ws WriteSettings) {
 
 	log.Println("reading", len(allblobs), "blobs")
 	if len(allblobs) > 100 {
-		size := len(allblobs) / parallelprocesses
+		size := len(allblobs) / parallelWriteProcesses
 		batches := int(math.Ceil(float64(len(allblobs)) / float64(size)))
 
 		log.Println("processing", batches, "batches of", size, "blobs each")
+
+		wg.Add(batches)
 		for i := 0; i < batches; i++ {
-			wg.Add(1)
 			go func(s, idx int) {
 				start := s * idx
 				end := idx*s + s
@@ -64,8 +65,8 @@ func ProcessBlobs(connstr string, groups []Group, ws WriteSettings) {
 	}
 
 	log.Println("writing", len(bchan), "blobs")
-	for i := 0; i < parallelprocesses; i++ {
-		wg.Add(1)
+	wg.Add(parallelWriteProcesses)
+	for i := 0; i < parallelWriteProcesses; i++ {
 		go func() {
 			writeBlobs(ws, bchan, echan)
 			wg.Done()
