@@ -35,6 +35,15 @@ func ReadAll(connstr, protobufLocation string, settings Settings, lang data.Lang
 		log.Println("loaded items from protobuf", len(pitems))
 	}
 
+	log.Println("loading templates")
+	tlist, err := api.LoadTemplatesMergeProtobuf(connstr, pitems)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't load templates %w", err)
+	}
+	log.Println("loaded", len(tlist), "templates")
+
+	tm := api.GetTemplateMap(tlist)
+
 	log.Println("loading items")
 	items, err := api.LoadItemsByTemplates(connstr, templateIds)
 	if err != nil {
@@ -48,14 +57,6 @@ func ReadAll(connstr, protobufLocation string, settings Settings, lang data.Lang
 	log.Println("loaded", len(items), "items")
 	_, m := api.LoadItemMap(items)
 
-	log.Println("loading templates")
-	tlist, err := api.LoadTemplates(connstr)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't load templates %w", err)
-	}
-	log.Println("loaded", len(tlist), "templates")
-
-	tm := api.GetTemplateMap(tlist)
 	api.SetStandardValues(m, tm)
 	api.SetTemplates(m, tm)
 

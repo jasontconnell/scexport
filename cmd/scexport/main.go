@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/jasontconnell/scexport/conf"
@@ -20,6 +21,7 @@ func main() {
 	out := flag.String("output", "", "log output to filename")
 	blobs := flag.Bool("blobs", false, "process blobs")
 	flast := flag.Bool("lastmod", false, "track with lastmod")
+	dest := flag.String("dest", ".", "base destination directory")
 	flag.Parse()
 
 	if *q {
@@ -66,10 +68,13 @@ func main() {
 		log.Fatal("resolving items. ", err)
 	}
 
+	contentLoc := filepath.Join(*dest, settings.Output.ContentLocation)
+	blobLoc := filepath.Join(*dest, settings.Output.ContentLocation)
+
 	ws := process.WriteSettings{
 		ContentFormat:   settings.Output.ContentFormat,
-		ContentLocation: settings.Output.ContentLocation,
-		BlobLocation:    settings.Output.BlobLocation,
+		ContentLocation: contentLoc,
+		BlobLocation:    blobLoc,
 		WriteBlobs:      *blobs,
 	}
 
